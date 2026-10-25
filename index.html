@@ -11,7 +11,6 @@ body{font-family:Arial,sans-serif;background:#101827;color:#fff;padding:20px;max
 section{background:#1c2940;padding:20px;border-radius:16px;margin:18px 0}
 input,textarea,button{width:100%;padding:13px;margin:8px 0 15px;border-radius:8px;border:0;font-size:16px}
 button{background:#9945ff;color:white;font-weight:bold;cursor:pointer}
-.secondary{background:#30425d}
 p{color:#c6d0e0;overflow-wrap:anywhere;line-height:1.5}
 .small{font-size:13px}
 code{overflow-wrap:anywhere}
@@ -52,35 +51,35 @@ code{overflow-wrap:anywhere}
 <p><strong>0.05 SOL</strong> per token creation.</p>
 <p>Service fee recipient:</p>
 <p><code id="recipient"></code></p>
-<button id="copyAddress" class="secondary" type="button">Copy Wallet Address</button>
+<button id="copyAddress" type="button">Copy Wallet Address</button>
 <p id="copyStatus" class="small"></p>
 <p>Network fees are separate and may vary.</p>
-<button id="create" type="button">Token Creation — Not Enabled Yet</button>
-<p id="notice" class="small" aria-live="polite">No payment will be collected by this demo.</p>
+<button id="create" type="button">Real Token Creation — Not Enabled</button>
+<p id="notice" class="small">Demo only. No SOL will be requested or sent.</p>
 </section>
 
-<p class="small">Security: Never enter your wallet recovery phrase or private key on this website.</p>
+<p class="small">Never enter your wallet recovery phrase or private key on this website.</p>
 
 <script>
 "use strict";
 
 const RECIPIENT = "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi";
-const SERVICE_FEE_SOL = 0.05;
 let connectedAddress = "";
 
 document.getElementById("recipient").textContent = RECIPIENT;
 
 document.getElementById("connect").addEventListener("click", async () => {
   const status = document.getElementById("walletStatus");
+  let provider = window.phantom?.solana || window.solana;
 
-  if (!window.solana || !window.solana.isPhantom) {
+  if (!provider || !provider.isPhantom) {
     status.textContent =
-      "Phantom wallet not detected. Open this page in the Phantom in-app browser.";
+      "Phantom not detected. Open this page in the Phantom app browser.";
     return;
   }
 
   try {
-    const result = await window.solana.connect();
+    const result = await provider.connect();
     connectedAddress = result.publicKey.toString();
     status.textContent = "Connected wallet: " + connectedAddress;
   } catch (error) {
@@ -94,53 +93,39 @@ document.getElementById("copyAddress").addEventListener("click", async () => {
     await navigator.clipboard.writeText(RECIPIENT);
     status.textContent = "Wallet address copied.";
   } catch (error) {
-    status.textContent = "Copy unavailable. Press and hold the wallet address to copy it.";
+    status.textContent = "Copy unavailable. Press and hold the address to copy it.";
   }
 });
 
 document.getElementById("tokenForm").addEventListener("submit", event => {
   event.preventDefault();
 
-  const name = document.getElementById("tokenName").value.trim();
-  const symbol = document.getElementById("tokenSymbol").value.trim();
-  const supply = document.getElementById("supply").value;
-  const description = document.getElementById("description").value.trim();
   const preview = document.getElementById("preview");
+  preview.replaceChildren();
+
+  const values = [
+    ["Name", document.getElementById("tokenName").value.trim()],
+    ["Symbol", document.getElementById("tokenSymbol").value.trim()],
+    ["Supply", document.getElementById("supply").value],
+    ["Description", document.getElementById("description").value.trim() || "None"]
+  ];
 
   const heading = document.createElement("h3");
   heading.textContent = "Token Preview";
+  preview.appendChild(heading);
 
-  preview.replaceChildren(heading);
-
-  [
-    ["Name: ", name],
-    ["Symbol: ", symbol],
-    ["Supply: ", supply],
-    ["Description: ", description || "No description"],
-    ["Service fee: ", SERVICE_FEE_SOL + " SOL"]
-  ].forEach(([label, value]) => {
+  values.forEach(([label, value]) => {
     const p = document.createElement("p");
-    const strong = document.createElement("strong");
-    strong.textContent = label;
-    p.append(strong, document.createTextNode(value));
+    p.textContent = label + ": " + value;
     preview.appendChild(p);
   });
-
-  const note = document.createElement("p");
-  note.textContent = "Preview only — no token has been created.";
-  preview.appendChild(note);
 });
 
 document.getElementById("create").addEventListener("click", () => {
-  const notice = document.getElementById("notice");
-
-  if (!connectedAddress) {
-    notice.textContent = "Connect your wallet first. Token creation is not enabled yet.";
-    return;
-  }
-
-  notice.textContent =
-    "Your wallet is connected, but real token creation and fee payment have not been implemented. No SOL has been requested or sent.";
+  document.getElementById("notice").textContent =
+    connectedAddress
+      ? "Wallet connected, but real token creation and payment are not implemented yet. No SOL was sent."
+      : "Connect Phantom first. Real token creation is not enabled yet.";
 });
 </script>
 </body>
