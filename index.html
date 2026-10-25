@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solana Token Maker</title>
+<style>
+body{font-family:Arial;background:#101827;color:white;padding:24px;max-width:500px;margin:auto}
+section{background:#1c2940;padding:20px;border-radius:16px}
+input,textarea,button{box-sizing:border-box;width:100%;padding:13px;margin:8px 0 16px;border-radius:8px;border:0}
+button{background:#9945FF;color:white;font-weight:bold}
+p{color:#c6d0e0}
+</style>
+</head>
+<body>
+<h1>Solana Token Maker</h1>
+<p>Create and preview your token details.</p>
+<section>
+<form id="f">
+<label>Token name</label>
+<input id="n" required placeholder="My Token">
+<label>Token symbol</label>
+<input id="s" required maxlength="10" placeholder="MTK">
+<label>Initial supply</label>
+<input id="a" type="number" min="1" required value="1000000">
+<label>Description</label>
+<textarea id="d" placeholder="About your token"></textarea>
+<button>Preview Token</button>
+</form>
+<div id="r"></div>
+</section>
+<p>Demo only. This page does not create real blockchain tokens or accept payments. Never enter your private key or recovery phrase.</p>
+<script>
+document.getElementById('f').onsubmit=function(e){
+e.preventDefault();
+document.getElementById('r').innerHTML='<h2>Token Preview</h2><p>Name: '+n.value.replace(/[<>&"]/g,'')+'</p><p>Symbol: '+s.value.replace(/[<>&"]/g,'')+'</p><p>Supply: '+a.value+'</p><p>'+d.value.replace(/[<>&"]/g,'')+'</p>';
+};
+</script>
+</body>
+</html>
