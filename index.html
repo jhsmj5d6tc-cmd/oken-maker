@@ -4,196 +4,136 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#101827">
 <title>Solana Token Maker</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0 auto;padding:20px;max-width:560px;background:#101827;color:#fff;font-family:Arial,sans-serif}
-header{text-align:center;padding:12px 0}
-section{background:#1c2940;padding:20px;border-radius:16px;margin:18px 0}
+body{font-family:Arial,sans-serif;background:#101323;color:#fff;margin:0;padding:20px}
+main{max-width:620px;margin:auto}
+section{background:#1b2035;padding:20px;border-radius:14px;margin:16px 0}
+h1{color:#a78bfa}
 label{display:block;margin-top:14px}
-input,textarea,button{width:100%;padding:13px;margin-top:8px;border-radius:9px;font-size:16px}
-input,textarea{border:1px solid #43516a;background:#fff;color:#101827}
-textarea{min-height:85px}
-button{border:0;background:#9945ff;color:#fff;font-weight:bold;cursor:pointer}
-button:disabled{opacity:.6}
-.secondary{background:#34435d}
-p{color:#c6d0e0;line-height:1.5;overflow-wrap:anywhere}
-code{overflow-wrap:anywhere}
-.small{font-size:13px}
-.status{min-height:22px}
-.fee{font-size:26px;font-weight:bold;color:#fff}
+input,textarea{box-sizing:border-box;width:100%;padding:12px;margin-top:6px;border-radius:8px;border:1px solid #555;background:#111629;color:white}
+button{padding:12px 16px;border:0;border-radius:8px;background:#8b5cf6;color:white;font-weight:bold;margin:8px 4px 0 0}
+.small{color:#c1c6d8;font-size:14px;overflow-wrap:anywhere}
+#status{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
-<header>
+<main>
 <h1>Solana Token Maker</h1>
 <p>Create and preview your Solana token.</p>
-</header>
 
 <section>
 <h2>1. Connect Wallet</h2>
-<button id="connect" type="button">Connect Phantom Wallet</button>
-<p id="walletStatus" class="status" aria-live="polite">Wallet not connected.</p>
-<button id="disconnect" class="secondary" type="button">Disconnect Wallet</button>
+<button id="connect">Connect Phantom Wallet</button>
+<button id="disconnect">Disconnect</button>
+<p id="status">Wallet not connected.</p>
 </section>
 
 <section>
 <h2>2. Token Details</h2>
-<form id="tokenForm">
-<label for="tokenName">Token Name</label>
-<input id="tokenName" maxlength="50" placeholder="Solana Community" required>
-
-<label for="tokenSymbol">Token Symbol</label>
-<input id="tokenSymbol" maxlength="10" placeholder="SOLX" required>
-
-<label for="supply">Initial Supply</label>
-<input id="supply" type="number" min="1" max="1000000000000" step="1" value="1000000" required>
-
-<label for="description">Description</label>
-<textarea id="description" maxlength="500" placeholder="Describe your token"></textarea>
-
-<button type="submit">Preview Token</button>
-</form>
-<div id="preview" aria-live="polite"></div>
+<label>Token Name<input id="name" placeholder="Solana Community"></label>
+<label>Token Symbol<input id="symbol" placeholder="SOLX" maxlength="10"></label>
+<label>Initial Supply<input id="supply" type="number" min="1" step="1" placeholder="1000000"></label>
+<label>Description<textarea id="description" rows="4" placeholder="Describe your token"></textarea></label>
+<button id="preview">Preview Token</button>
+<div id="previewResult"></div>
 </section>
 
 <section>
 <h2>3. Service Fee</h2>
-<p class="fee">0.05 SOL</p>
+<h3>0.05 SOL</h3>
 <p>Service fee per token creation.</p>
-<p>Payment recipient:</p>
-<p><code id="recipient"></code></p>
-<button id="copyAddress" class="secondary" type="button">Copy Wallet Address</button>
-<p id="copyStatus" class="small status" aria-live="polite"></p>
-<p class="small">Network fees are separate and may vary.</p>
-<button id="create" type="button">Real Token Creation — Not Enabled</button>
-<p id="notice" class="small status" aria-live="polite">Demo mode. No SOL will be requested or sent.</p>
+<p class="small">Payment recipient:</p>
+<p class="small" id="recipient">FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi</p>
+<button id="copy">Copy Wallet Address</button>
+<p class="small">Network fees are separate and depend on the transaction.</p>
 </section>
 
+<section>
+<h2>4. Token Creation</h2>
+<p id="creationStatus">Real token creation is not enabled in this version.</p>
+<p class="small">No payment will be requested or sent by this demo.</p>
+</section>
 <p class="small">Never enter your recovery phrase or private key on this website.</p>
+</main>
 
 <script>
-"use strict";
-
-const RECIPIENT = "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi";
-
-let connectedAddress = "";
 let provider = null;
-
-const connectButton = document.getElementById("connect");
-const walletStatus = document.getElementById("walletStatus");
-const notice = document.getElementById("notice");
-
-document.getElementById("recipient").textContent = RECIPIENT;
+let connectedAddress = null;
 
 function findPhantom() {
   if (window.phantom && window.phantom.solana) {
     return window.phantom.solana;
   }
-
   if (window.solana && window.solana.isPhantom) {
     return window.solana;
   }
-
   return null;
 }
 
-connectButton.addEventListener("click", async function () {
-  connectButton.disabled = true;
-  walletStatus.textContent = "Checking wallet provider...";
+function showStatus(message) {
+  document.getElementById("status").textContent = message;
+}
+
+document.getElementById("connect").addEventListener("click", async () => {
+  provider = findPhantom();
+
+  if (!provider) {
+    showStatus("Phantom provider not detected. Open this website in Phantom's in-app browser and try again.");
+    return;
+  }
 
   try {
-    provider = findPhantom();
-
-    if (!provider) {
-      walletStatus.textContent =
-        "Phantom provider is not available in this page. Try updating Phantom and reopening this site in its browser.";
-      return;
-    }
-
-    if (typeof provider.connect !== "function") {
-      walletStatus.textContent =
-        "A wallet provider was found, but its connect method is unavailable.";
-      return;
-    }
-
-    walletStatus.textContent = "Waiting for Phantom approval...";
     const result = await provider.connect();
-
-    if (!result || !result.publicKey) {
-      walletStatus.textContent =
-        "No public address was returned. Please try again.";
-      return;
-    }
-
     connectedAddress = result.publicKey.toString();
-    walletStatus.textContent = "Connected wallet: " + connectedAddress;
-    notice.textContent =
-      "Wallet connected. Real token creation and payment are not enabled.";
+    showStatus("Connected wallet: " + connectedAddress);
   } catch (error) {
-    walletStatus.textContent =
-      "Connection failed: " +
-      (error && error.message ? error.message : "Please try again.");
-  } finally {
-    connectButton.disabled = false;
+    connectedAddress = null;
+    showStatus("Connection cancelled or failed: " + (error.message || "Unknown error"));
   }
 });
 
-document.getElementById("disconnect").addEventListener("click", async function () {
+document.getElementById("disconnect").addEventListener("click", async () => {
   try {
-    if (provider && typeof provider.disconnect === "function") {
-      await provider.disconnect();
-    }
-  } catch (error) {
-    // Clear the local connection state below.
-  }
-
-  connectedAddress = "";
-  provider = null;
-  walletStatus.textContent = "Wallet not connected.";
-  notice.textContent = "Demo mode. No SOL will be requested or sent.";
+    if (provider && provider.disconnect) await provider.disconnect();
+  } catch (_) {}
+  connectedAddress = null;
+  showStatus("Wallet disconnected.");
 });
 
-document.getElementById("copyAddress").addEventListener("click", async function () {
-  const copyStatus = document.getElementById("copyStatus");
+document.getElementById("preview").addEventListener("click", () => {
+  const name = document.getElementById("name").value.trim();
+  const symbol = document.getElementById("symbol").value.trim().toUpperCase();
+  const supply = document.getElementById("supply").value;
+  const description = document.getElementById("description").value.trim();
+  const output = document.getElementById("previewResult");
 
-  try {
-    await navigator.clipboard.writeText(RECIPIENT);
-    copyStatus.textContent = "Address copied.";
-  } catch (error) {
-    copyStatus.textContent = "Press and hold the address to copy it.";
+  if (!name || !symbol || !supply || !Number.isSafeInteger(Number(supply)) || Number(supply) <= 0) {
+    output.textContent = "Enter a token name, symbol, and a positive whole-number supply.";
+    return;
   }
-});
 
-document.getElementById("tokenForm").addEventListener("submit", function (event) {
-  event.preventDefault();
+  output.innerHTML = "";
+  const title = document.createElement("h3");
+  title.textContent = "Token Preview";
+  output.appendChild(title);
 
-  const values = [
-    ["Name", document.getElementById("tokenName").value.trim()],
-    ["Symbol", document.getElementById("tokenSymbol").value.trim()],
-    ["Initial Supply", document.getElementById("supply").value],
-    ["Description", document.getElementById("description").value.trim() || "None"]
-  ];
-
-  const preview = document.getElementById("preview");
-  preview.replaceChildren();
-
-  const heading = document.createElement("h3");
-  heading.textContent = "Token Preview";
-  preview.appendChild(heading);
-
-  values.forEach(function (item) {
-    const paragraph = document.createElement("p");
-    paragraph.textContent = item[0] + ": " + item[1];
-    preview.appendChild(paragraph);
+  [["Name", name], ["Symbol", symbol], ["Initial Supply", supply],
+   ["Description", description || "No description provided"]].forEach(([label, value]) => {
+    const p = document.createElement("p");
+    p.textContent = label + ": " + value;
+    output.appendChild(p);
   });
 });
 
-document.getElementById("create").addEventListener("click", function () {
-  notice.textContent = connectedAddress
-    ? "Wallet connected, but real token creation and payment are not implemented. No SOL was sent."
-    : "Connect Phantom first. Real token creation is not enabled.";
+document.getElementById("copy").addEventListener("click", async () => {
+  const address = document.getElementById("recipient").textContent.trim();
+  try {
+    await navigator.clipboard.writeText(address);
+    alert("Wallet address copied.");
+  } catch (_) {
+    prompt("Copy this wallet address:", address);
+  }
 });
 </script>
 </body>
