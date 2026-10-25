@@ -4,32 +4,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dibba Token Maker</title>
+<meta name="theme-color" content="#101827">
+<title>Solana Token Maker</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0 auto;padding:20px;max-width:560px;background:#101827;color:white;font-family:Arial,sans-serif}
-header{text-align:center;padding:12px 0 22px}
-.logo{font-size:38px}
+body{margin:0 auto;padding:20px;max-width:560px;background:#101827;color:#fff;font-family:Arial,sans-serif}
+header{text-align:center;padding:12px 0}
 section{background:#1c2940;padding:20px;border-radius:16px;margin:18px 0}
-label{display:block;margin-top:14px;font-size:14px}
+label{display:block;margin-top:14px}
 input,textarea,button{width:100%;padding:13px;margin-top:8px;border-radius:9px;font-size:16px}
 input,textarea{border:1px solid #43516a;background:#fff;color:#101827}
 textarea{min-height:85px}
-button{border:0;background:#9945ff;color:white;font-weight:bold;cursor:pointer}
+button{border:0;background:#9945ff;color:#fff;font-weight:bold;cursor:pointer}
 button:disabled{opacity:.6}
 .secondary{background:#34435d}
 p{color:#c6d0e0;line-height:1.5;overflow-wrap:anywhere}
 code{overflow-wrap:anywhere}
 .small{font-size:13px}
-.status{min-height:20px}
+.status{min-height:22px}
 .fee{font-size:26px;font-weight:bold;color:#fff}
 </style>
 </head>
 <body>
-
 <header>
-<div class="logo">◎</div>
-<h1>Dibba Token Maker</h1>
+<h1>Solana Token Maker</h1>
 <p>Create and preview your Solana token.</p>
 </header>
 
@@ -44,16 +42,16 @@ code{overflow-wrap:anywhere}
 <h2>2. Token Details</h2>
 <form id="tokenForm">
 <label for="tokenName">Token Name</label>
-<input id="tokenName" maxlength="50" placeholder="Dibba" required>
+<input id="tokenName" maxlength="50" placeholder="Solana Community" required>
 
 <label for="tokenSymbol">Token Symbol</label>
-<input id="tokenSymbol" maxlength="10" placeholder="DIB" required>
+<input id="tokenSymbol" maxlength="10" placeholder="SOLX" required>
 
 <label for="supply">Initial Supply</label>
 <input id="supply" type="number" min="1" max="1000000000000" step="1" value="1000000" required>
 
 <label for="description">Description</label>
-<textarea id="description" maxlength="500" placeholder="About your token"></textarea>
+<textarea id="description" maxlength="500" placeholder="Describe your token"></textarea>
 
 <button type="submit">Preview Token</button>
 </form>
@@ -68,68 +66,75 @@ code{overflow-wrap:anywhere}
 <p><code id="recipient"></code></p>
 <button id="copyAddress" class="secondary" type="button">Copy Wallet Address</button>
 <p id="copyStatus" class="small status" aria-live="polite"></p>
-<p class="small">Solana network fees are separate and may vary.</p>
-<button id="create" type="button">Create Token — Coming Soon</button>
-<p id="notice" class="small status" aria-live="polite">Preview mode. No payment will be requested or sent.</p>
+<p class="small">Network fees are separate and may vary.</p>
+<button id="create" type="button">Real Token Creation — Not Enabled</button>
+<p id="notice" class="small status" aria-live="polite">Demo mode. No SOL will be requested or sent.</p>
 </section>
 
-<footer>
-<p class="small">Security notice: Never enter your recovery phrase or private key on this website.</p>
-</footer>
+<p class="small">Never enter your recovery phrase or private key on this website.</p>
 
 <script>
 "use strict";
 
 const RECIPIENT = "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi";
+
 let connectedAddress = "";
 let provider = null;
 
-const status = document.getElementById("walletStatus");
 const connectButton = document.getElementById("connect");
+const walletStatus = document.getElementById("walletStatus");
+const notice = document.getElementById("notice");
 
 document.getElementById("recipient").textContent = RECIPIENT;
 
-function getProvider() {
+function findPhantom() {
   if (window.phantom && window.phantom.solana) {
     return window.phantom.solana;
   }
+
   if (window.solana && window.solana.isPhantom) {
     return window.solana;
   }
+
   return null;
 }
 
 connectButton.addEventListener("click", async function () {
   connectButton.disabled = true;
-  status.textContent = "Looking for Phantom...";
+  walletStatus.textContent = "Checking wallet provider...";
 
   try {
-    provider = getProvider();
+    provider = findPhantom();
 
     if (!provider) {
-      status.textContent =
-        "Phantom not detected. Open this page inside the Phantom app browser.";
+      walletStatus.textContent =
+        "Phantom provider is not available in this page. Try updating Phantom and reopening this site in its browser.";
       return;
     }
 
-    status.textContent = "Approve the connection in Phantom.";
+    if (typeof provider.connect !== "function") {
+      walletStatus.textContent =
+        "A wallet provider was found, but its connect method is unavailable.";
+      return;
+    }
 
+    walletStatus.textContent = "Waiting for Phantom approval...";
     const result = await provider.connect();
 
     if (!result || !result.publicKey) {
-      status.textContent = "No wallet address received. Please try again.";
+      walletStatus.textContent =
+        "No public address was returned. Please try again.";
       return;
     }
 
     connectedAddress = result.publicKey.toString();
-    status.textContent = "Connected wallet: " + connectedAddress;
-    document.getElementById("notice").textContent =
-      "Wallet connected. Token creation and payment are not enabled yet.";
+    walletStatus.textContent = "Connected wallet: " + connectedAddress;
+    notice.textContent =
+      "Wallet connected. Real token creation and payment are not enabled.";
   } catch (error) {
-    status.textContent =
-      error && error.code === 4001
-        ? "Connection rejected. Try again and approve in Phantom."
-        : "Connection failed. Reopen the page and try again.";
+    walletStatus.textContent =
+      "Connection failed: " +
+      (error && error.message ? error.message : "Please try again.");
   } finally {
     connectButton.disabled = false;
   }
@@ -141,14 +146,13 @@ document.getElementById("disconnect").addEventListener("click", async function (
       await provider.disconnect();
     }
   } catch (error) {
-    // Clear the local connection state.
+    // Clear the local connection state below.
   }
 
   connectedAddress = "";
   provider = null;
-  status.textContent = "Wallet not connected.";
-  document.getElementById("notice").textContent =
-    "Preview mode. No payment will be requested or sent.";
+  walletStatus.textContent = "Wallet not connected.";
+  notice.textContent = "Demo mode. No SOL will be requested or sent.";
 });
 
 document.getElementById("copyAddress").addEventListener("click", async function () {
@@ -158,19 +162,19 @@ document.getElementById("copyAddress").addEventListener("click", async function 
     await navigator.clipboard.writeText(RECIPIENT);
     copyStatus.textContent = "Address copied.";
   } catch (error) {
-    copyStatus.textContent =
-      "Press and hold the wallet address above to copy it.";
+    copyStatus.textContent = "Press and hold the address to copy it.";
   }
 });
 
 document.getElementById("tokenForm").addEventListener("submit", function (event) {
   event.preventDefault();
 
-  const name = document.getElementById("tokenName").value.trim();
-  const symbol = document.getElementById("tokenSymbol").value.trim();
-  const supply = document.getElementById("supply").value;
-  const description =
-    document.getElementById("description").value.trim() || "None";
+  const values = [
+    ["Name", document.getElementById("tokenName").value.trim()],
+    ["Symbol", document.getElementById("tokenSymbol").value.trim()],
+    ["Initial Supply", document.getElementById("supply").value],
+    ["Description", document.getElementById("description").value.trim() || "None"]
+  ];
 
   const preview = document.getElementById("preview");
   preview.replaceChildren();
@@ -179,23 +183,18 @@ document.getElementById("tokenForm").addEventListener("submit", function (event)
   heading.textContent = "Token Preview";
   preview.appendChild(heading);
 
-  [
-    ["Name", name],
-    ["Symbol", symbol],
-    ["Initial Supply", supply],
-    ["Description", description]
-  ].forEach(function (item) {
-    const p = document.createElement("p");
-    p.textContent = item[0] + ": " + item[1];
-    preview.appendChild(p);
+  values.forEach(function (item) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = item[0] + ": " + item[1];
+    preview.appendChild(paragraph);
   });
 });
 
 document.getElementById("create").addEventListener("click", function () {
-  document.getElementById("notice").textContent =
-    "Real token creation and payment are not implemented yet. No SOL has been sent.";
+  notice.textContent = connectedAddress
+    ? "Wallet connected, but real token creation and payment are not implemented. No SOL was sent."
+    : "Connect Phantom first. Real token creation is not enabled.";
 });
 </script>
-
 </body>
 </html>
