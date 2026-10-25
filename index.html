@@ -6,36 +6,142 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Solana Token Maker</title>
 <style>
-body{font-family:Arial;background:#101827;color:white;padding:24px;max-width:500px;margin:auto}
-section{background:#1c2940;padding:20px;border-radius:16px}
-input,textarea,button{box-sizing:border-box;width:100%;padding:13px;margin:8px 0 16px;border-radius:8px;border:0}
-button{background:#9945FF;color:white;font-weight:bold}
-p{color:#c6d0e0}
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#101827;color:#fff;padding:20px;max-width:540px;margin:auto}
+section{background:#1c2940;padding:20px;border-radius:16px;margin:18px 0}
+input,textarea,button{width:100%;padding:13px;margin:8px 0 15px;border-radius:8px;border:0;font-size:16px}
+button{background:#9945ff;color:white;font-weight:bold;cursor:pointer}
+.secondary{background:#30425d}
+p{color:#c6d0e0;overflow-wrap:anywhere;line-height:1.5}
+.small{font-size:13px}
+code{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
 <h1>Solana Token Maker</h1>
-<p>Create and preview your token details.</p>
+<p>Create and preview your Solana token.</p>
+
 <section>
-<form id="f">
-<label>Token name</label>
-<input id="n" required placeholder="My Token">
-<label>Token symbol</label>
-<input id="s" required maxlength="10" placeholder="MTK">
-<label>Initial supply</label>
-<input id="a" type="number" min="1" required value="1000000">
-<label>Description</label>
-<textarea id="d" placeholder="About your token"></textarea>
-<button>Preview Token</button>
-</form>
-<div id="r"></div>
+<h2>1. Connect wallet</h2>
+<button id="connect" type="button">Connect Phantom Wallet</button>
+<p id="walletStatus">Wallet not connected.</p>
 </section>
-<p>Demo only. This page does not create real blockchain tokens or accept payments. Never enter your private key or recovery phrase.</p>
+
+<section>
+<h2>2. Token details</h2>
+<form id="tokenForm">
+<label for="tokenName">Token name</label>
+<input id="tokenName" required maxlength="50" placeholder="Dibba">
+
+<label for="tokenSymbol">Token symbol</label>
+<input id="tokenSymbol" required maxlength="10" placeholder="DIB">
+
+<label for="supply">Initial supply</label>
+<input id="supply" type="number" min="1" max="1000000000000" step="1" required value="1000000">
+
+<label for="description">Description</label>
+<textarea id="description" maxlength="500" placeholder="About your token"></textarea>
+
+<button type="submit">Preview Token</button>
+</form>
+<div id="preview" aria-live="polite"></div>
+</section>
+
+<section>
+<h2>3. Service fee</h2>
+<p><strong>0.05 SOL</strong> per token creation.</p>
+<p>Service fee recipient:</p>
+<p><code id="recipient"></code></p>
+<button id="copyAddress" class="secondary" type="button">Copy Wallet Address</button>
+<p id="copyStatus" class="small"></p>
+<p>Network fees are separate and may vary.</p>
+<button id="create" type="button">Token Creation — Not Enabled Yet</button>
+<p id="notice" class="small" aria-live="polite">No payment will be collected by this demo.</p>
+</section>
+
+<p class="small">Security: Never enter your wallet recovery phrase or private key on this website.</p>
+
 <script>
-document.getElementById('f').onsubmit=function(e){
-e.preventDefault();
-document.getElementById('r').innerHTML='<h2>Token Preview</h2><p>Name: '+n.value.replace(/[<>&"]/g,'')+'</p><p>Symbol: '+s.value.replace(/[<>&"]/g,'')+'</p><p>Supply: '+a.value+'</p><p>'+d.value.replace(/[<>&"]/g,'')+'</p>';
-};
+"use strict";
+
+const RECIPIENT = "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi";
+const SERVICE_FEE_SOL = 0.05;
+let connectedAddress = "";
+
+document.getElementById("recipient").textContent = RECIPIENT;
+
+document.getElementById("connect").addEventListener("click", async () => {
+  const status = document.getElementById("walletStatus");
+
+  if (!window.solana || !window.solana.isPhantom) {
+    status.textContent =
+      "Phantom wallet not detected. Open this page in the Phantom in-app browser.";
+    return;
+  }
+
+  try {
+    const result = await window.solana.connect();
+    connectedAddress = result.publicKey.toString();
+    status.textContent = "Connected wallet: " + connectedAddress;
+  } catch (error) {
+    status.textContent = "Wallet connection cancelled or failed.";
+  }
+});
+
+document.getElementById("copyAddress").addEventListener("click", async () => {
+  const status = document.getElementById("copyStatus");
+  try {
+    await navigator.clipboard.writeText(RECIPIENT);
+    status.textContent = "Wallet address copied.";
+  } catch (error) {
+    status.textContent = "Copy unavailable. Press and hold the wallet address to copy it.";
+  }
+});
+
+document.getElementById("tokenForm").addEventListener("submit", event => {
+  event.preventDefault();
+
+  const name = document.getElementById("tokenName").value.trim();
+  const symbol = document.getElementById("tokenSymbol").value.trim();
+  const supply = document.getElementById("supply").value;
+  const description = document.getElementById("description").value.trim();
+  const preview = document.getElementById("preview");
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Token Preview";
+
+  preview.replaceChildren(heading);
+
+  [
+    ["Name: ", name],
+    ["Symbol: ", symbol],
+    ["Supply: ", supply],
+    ["Description: ", description || "No description"],
+    ["Service fee: ", SERVICE_FEE_SOL + " SOL"]
+  ].forEach(([label, value]) => {
+    const p = document.createElement("p");
+    const strong = document.createElement("strong");
+    strong.textContent = label;
+    p.append(strong, document.createTextNode(value));
+    preview.appendChild(p);
+  });
+
+  const note = document.createElement("p");
+  note.textContent = "Preview only — no token has been created.";
+  preview.appendChild(note);
+});
+
+document.getElementById("create").addEventListener("click", () => {
+  const notice = document.getElementById("notice");
+
+  if (!connectedAddress) {
+    notice.textContent = "Connect your wallet first. Token creation is not enabled yet.";
+    return;
+  }
+
+  notice.textContent =
+    "Your wallet is connected, but real token creation and fee payment have not been implemented. No SOL has been requested or sent.";
+});
 </script>
 </body>
 </html>
