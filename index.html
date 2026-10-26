@@ -1,92 +1,103 @@
 
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>منشئ عملات سولانا</title>
+<meta name="theme-color" content="#0b1020">
+<title>Solana Token Creator</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0b1020;color:#f4f7ff;font-family:Tahoma,Arial,sans-serif;line-height:1.7}
-main{max-width:720px;margin:auto;padding:20px 14px}
-.card{background:#141c31;border:1px solid #303c5b;border-radius:16px;padding:18px;margin:15px 0}
-h1{font-size:27px;margin:0}
+body{margin:0;background:#0b1020;color:#f4f7ff;font-family:Arial,sans-serif;line-height:1.6}
+main{max-width:720px;margin:auto;padding:24px 15px}
+h1{font-size:28px;margin:0}
 h2{font-size:19px;margin:0 0 12px}
 p{color:#c0cbe2}
+.card{background:#141c31;border:1px solid #303c5b;border-radius:16px;padding:18px;margin:16px 0}
 label{display:block;margin-top:13px}
 input,select{width:100%;padding:13px;border-radius:10px;border:1px solid #394767;background:#0c1326;color:white;font-size:16px;margin-top:5px}
+input[type=checkbox]{width:auto}
 button{width:100%;padding:14px;margin-top:12px;border:0;border-radius:10px;background:#8374ff;color:white;font-size:16px;font-weight:bold;cursor:pointer}
-button:disabled{opacity:.5}
+button:disabled{opacity:.5;cursor:not-allowed}
 .secondary{background:#293550}
-.status{white-space:pre-wrap;overflow-wrap:anywhere;background:#0c1326;border:1px solid #2b3653;border-radius:10px;padding:12px;margin-top:12px;font-size:13px;direction:rtl}
+.status{white-space:pre-wrap;overflow-wrap:anywhere;background:#0c1326;border:1px solid #2b3653;border-radius:10px;padding:12px;margin-top:12px;font-size:13px}
 .small{font-size:12px;color:#aab5cf}
 .good{color:#4ade80}.bad{color:#fb7185}
-code{direction:ltr;display:block;overflow-wrap:anywhere;word-break:break-all}
+code{display:block;overflow-wrap:anywhere;word-break:break-all}
 a{color:#b8adff}
 </style>
 </head>
 <body>
 <main>
-  <h1>منشئ عملات سولانا</h1>
-  <p>أنشئ رمز SPL على شبكة سولانا باستخدام محفظة Phantom.</p>
+  <h1>Solana Token Creator</h1>
+  <p>Create an SPL token on Solana using your Phantom wallet.</p>
 
   <section class="card">
-    <h2>١. ربط المحفظة</h2>
-    <button id="connectButton" type="button">ربط محفظة Phantom</button>
-    <button id="disconnectButton" class="secondary" type="button" disabled>فصل المحفظة</button>
-    <div id="walletStatus" class="status">اضغط على زر ربط المحفظة للبدء.</div>
+    <h2>1. Connect Wallet</h2>
+    <button id="connectButton" type="button">Connect Phantom</button>
+    <button id="disconnectButton" class="secondary" type="button" disabled>Disconnect Wallet</button>
+    <div id="walletStatus" class="status">Ready. Click Connect Phantom to begin.</div>
   </section>
 
   <section class="card">
-    <h2>٢. بيانات العملة</h2>
-    <label for="tokenName">اسم العملة</label>
-    <input id="tokenName" maxlength="32" placeholder="مثال: My Token">
+    <h2>2. Token Details</h2>
+    <label for="tokenName">Token Name</label>
+    <input id="tokenName" maxlength="32" placeholder="Example: My Token">
 
-    <label for="tokenSymbol">رمز العملة بالإنجليزي</label>
-    <input id="tokenSymbol" maxlength="10" placeholder="مثال: MYT">
+    <label for="tokenSymbol">Token Symbol</label>
+    <input id="tokenSymbol" maxlength="10" placeholder="Example: MYT">
 
-    <label for="supply">الكمية الإجمالية</label>
+    <label for="supply">Initial Token Supply</label>
     <input id="supply" type="number" min="1" step="1" value="1000000">
 
-    <label for="decimals">عدد المنازل العشرية</label>
+    <label for="decimals">Decimal Places</label>
     <select id="decimals">
       <option value="0">0</option>
       <option value="2">2</option>
       <option value="6">6</option>
       <option value="9" selected>9</option>
     </select>
-    <p class="small">الكمية الأولية ستُسكّ في محفظتك المتصلة.</p>
+    <p class="small">The initial token supply will be minted to your connected wallet.</p>
   </section>
 
   <section class="card">
-    <h2>٣. رسوم الخدمة</h2>
-    <p>رسوم الخدمة: <strong>0.05 SOL</strong></p>
-    <p class="small">عنوان استلام رسوم الخدمة:</p>
+    <h2>3. Service Fee</h2>
+    <p>Service fee: <strong>0.05 SOL</strong></p>
+    <p class="small">Service fee recipient address:</p>
     <code id="feeAddress">FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi</code>
 
     <label>
-      <input id="feeConsent" type="checkbox" style="width:auto">
-      أوافق على رسوم الخدمة البالغة 0.05 SOL بالإضافة إلى رسوم الشبكة.
+      <input id="feeConsent" type="checkbox">
+      I agree to pay the 0.05 SOL service fee plus Solana network fees.
     </label>
 
-    <button id="createButton" type="button" disabled>إنشاء العملة</button>
-    <div id="transactionStatus" class="status">لم تبدأ أي معاملة.</div>
-    <p class="small">لا توافق على المعاملة إلا بعد مراجعة المبلغ وعنوان المستلم داخل Phantom. لا تدخل العبارة السرية أو المفتاح الخاص في الموقع.</p>
+    <button id="createButton" type="button" disabled>Create Token</button>
+    <div id="transactionStatus" class="status">No transaction has been started.</div>
+
+    <p class="small">
+      Always verify transaction details in Phantom before approving.
+      Never enter your recovery phrase or private key on this website.
+    </p>
   </section>
 
   <section class="card">
-    <h2>معلومات مهمة</h2>
-    <p class="small">هذه النسخة تنشئ رمز SPL وتسكّ الكمية الأولية. لا تضيف بيانات الاسم والشعار إلى metadata على الشبكة، ولا تنشئ سيولة أو تضمن إدراج العملة في منصات التداول. يلزم اختبارها على الموقع المنشور قبل استخدامها مع العملاء.</p>
+    <h2>Important Information</h2>
+    <p class="small">
+      This version creates an SPL token and mints its initial supply.
+      The token name and symbol are not stored as on-chain metadata.
+      A logo, metadata, liquidity pool, and exchange listing are not included.
+      These features require additional steps and may incur additional costs.
+    </p>
   </section>
 </main>
 
-<!-- هذا الجزء يعمل حتى لو فشلت مكتبات إنشاء العملات في التحميل -->
 <script>
 (function () {
   const $ = id => document.getElementById(id);
 
   window.tokenCreatorWallet = null;
   window.tokenCreatorProvider = null;
+  window.createSolanaToken = null;
 
   function show(id, message, type) {
     const el = $(id);
@@ -94,35 +105,57 @@ a{color:#b8adff}
     el.className = "status" + (type ? " " + type : "");
   }
 
+  window.showTokenCreatorStatus = show;
+
   function findPhantom() {
-    if (window.phantom && window.phantom.solana) {
-      return window.phantom.solana;
-    }
-    if (window.solana && window.solana.isPhantom) {
-      return window.solana;
-    }
+    try {
+      if (window.phantom && window.phantom.solana &&
+          window.phantom.solana.isPhantom) {
+        return window.phantom.solana;
+      }
+
+      if (window.solana && window.solana.isPhantom) {
+        return window.solana;
+      }
+    } catch (error) {}
+
     return null;
   }
 
   function updateButtons() {
     const connected = !!window.tokenCreatorWallet;
+
     $("connectButton").textContent =
-      connected ? "المحفظة متصلة" : "ربط محفظة Phantom";
+      connected ? "Wallet Connected" : "Connect Phantom";
+
     $("disconnectButton").disabled = !connected;
+
     $("createButton").disabled =
-      !connected || !$("feeConsent").checked ||
+      !connected ||
+      !$("feeConsent").checked ||
       typeof window.createSolanaToken !== "function";
   }
 
   $("connectButton").addEventListener("click", async function () {
-    show("walletStatus", "تم الضغط على الزر. جارٍ البحث عن Phantom...");
+    show("walletStatus", "CONNECT BUTTON WORKS.\nChecking for Phantom...");
 
     const provider = findPhantom();
 
-    if (!provider || typeof provider.connect !== "function") {
+    if (!provider) {
       show(
         "walletStatus",
-        "لم يتم العثور على Phantom.\nافتح الموقع من داخل متصفح Phantom نفسه، ثم أعد المحاولة.",
+        "Phantom provider was not detected.\n\n" +
+        "Open this website inside the Phantom app's browser and try again. " +
+        "If you are already using that browser, reload the page and try again.",
+        "bad"
+      );
+      return;
+    }
+
+    if (typeof provider.connect !== "function") {
+      show(
+        "walletStatus",
+        "A Phantom provider was found, but it does not support connect().",
         "bad"
       );
       return;
@@ -131,28 +164,30 @@ a{color:#b8adff}
     window.tokenCreatorProvider = provider;
 
     try {
-      show("walletStatus", "بانتظار موافقتك على الاتصال داخل Phantom...");
+      show("walletStatus", "Phantom detected. Waiting for wallet approval...");
+
       const result = await provider.connect();
-      const key = result && result.publicKey
-        ? result.publicKey
-        : provider.publicKey;
+      const key = (result && result.publicKey) || provider.publicKey;
 
       if (!key) {
-        throw new Error("لم يرجع عنوان المحفظة.");
+        throw new Error("Phantom did not return a public wallet address.");
       }
 
       window.tokenCreatorWallet = key.toString();
+
       show(
         "walletStatus",
-        "تم الاتصال بنجاح.\nعنوان محفظتك:\n" +
+        "Wallet connected successfully.\n\nWallet address:\n" +
         window.tokenCreatorWallet,
         "good"
       );
     } catch (error) {
       window.tokenCreatorWallet = null;
+
       show(
         "walletStatus",
-        "فشل الاتصال:\n" + (error.message || String(error)),
+        "Wallet connection failed:\n" +
+        (error && error.message ? error.message : String(error)),
         "bad"
       );
     }
@@ -163,47 +198,55 @@ a{color:#b8adff}
   $("disconnectButton").addEventListener("click", async function () {
     try {
       if (window.tokenCreatorProvider &&
-          window.tokenCreatorProvider.disconnect) {
+          typeof window.tokenCreatorProvider.disconnect === "function") {
         await window.tokenCreatorProvider.disconnect();
       }
     } catch (error) {}
 
     window.tokenCreatorWallet = null;
-    show("walletStatus", "تم فصل المحفظة.");
+    window.tokenCreatorProvider = null;
+
+    show("walletStatus", "Wallet disconnected.");
     updateButtons();
   });
 
   $("feeConsent").addEventListener("change", updateButtons);
 
-  window.addEventListener("load", function () {
-    updateButtons();
-  });
+  window.addEventListener("load", updateButtons);
 
   window.updateTokenCreatorButtons = updateButtons;
-  window.showTokenCreatorStatus = show;
+  updateButtons();
 })();
 </script>
 
-<!-- مكتبات إنشاء العملة الفعلية -->
 <script type="module">
 const $ = id => document.getElementById(id);
-const show = (message, type) =>
+
+const showTransaction = (message, type) =>
   window.showTokenCreatorStatus("transactionStatus", message, type);
 
 try {
+  showTransaction("Loading Solana libraries...");
+
   const web3 = await import(
     "https://esm.sh/@solana/web3.js@1.98.4"
   );
+
   const spl = await import(
     "https://esm.sh/@solana/spl-token@0.4.13?external=@solana/web3.js"
   );
 
   const {
-    Connection, PublicKey, Keypair, SystemProgram, Transaction
+    Connection,
+    PublicKey,
+    Keypair,
+    SystemProgram,
+    Transaction
   } = web3;
 
   const {
-    TOKEN_PROGRAM_ID, MINT_SIZE,
+    TOKEN_PROGRAM_ID,
+    MINT_SIZE,
     getMinimumBalanceForRentExemptMint,
     createInitializeMintInstruction,
     getAssociatedTokenAddress,
@@ -225,22 +268,29 @@ try {
   window.createSolanaToken = async function () {
     if (busy) return;
 
-    const walletString = window.tokenCreatorWallet;
     const provider = window.tokenCreatorProvider;
+    const walletString = window.tokenCreatorWallet;
 
-    if (!walletString || !provider) {
-      show("اربط محفظة Phantom أولاً.", "bad");
+    if (!provider || !walletString) {
+      showTransaction("Please connect your Phantom wallet first.", "bad");
       return;
     }
 
     if (!$("feeConsent").checked) {
-      show("وافق على رسوم الخدمة أولاً.", "bad");
+      showTransaction("Please agree to the service fee first.", "bad");
+      return;
+    }
+
+    if (typeof provider.signAndSendTransaction !== "function") {
+      showTransaction(
+        "Your connected wallet does not support signAndSendTransaction.",
+        "bad"
+      );
       return;
     }
 
     busy = true;
-    $("createButton").disabled = true;
-    let transactionSent = false;
+    window.updateTokenCreatorButtons();
 
     try {
       const name = $("tokenName").value.trim();
@@ -249,43 +299,53 @@ try {
       const decimals = Number($("decimals").value);
 
       if (!name || name.length > 32) {
-        throw new Error("أدخل اسم العملة، بحد أقصى 32 حرفاً.");
+        throw new Error("Enter a token name of up to 32 characters.");
       }
 
       if (!/^[A-Za-z0-9]{1,10}$/.test(symbol)) {
-        throw new Error("استخدم رمزاً إنجليزياً من 1 إلى 10 أحرف أو أرقام.");
+        throw new Error(
+          "The token symbol must contain 1–10 English letters or numbers."
+        );
       }
 
       if (!/^[1-9][0-9]*$/.test(rawSupply)) {
-        throw new Error("أدخل كمية صحيحة أكبر من صفر.");
+        throw new Error("Enter a whole-number supply greater than zero.");
       }
 
       const supply = BigInt(rawSupply);
       const mintAmount = supply * (10n ** BigInt(decimals));
 
       if (mintAmount > 18446744073709551615n) {
-        throw new Error("الكمية تتجاوز الحد المدعوم.");
+        throw new Error("The requested token supply exceeds the supported limit.");
       }
 
       const owner = new PublicKey(walletString);
-      const liveKey = provider.publicKey
+      const currentKey = provider.publicKey
         ? new PublicKey(provider.publicKey.toString())
         : owner;
 
-      if (!owner.equals(liveKey)) {
-        throw new Error("تغير حساب المحفظة. افصل المحفظة وأعد ربطها.");
+      if (!owner.equals(currentKey)) {
+        throw new Error(
+          "The connected wallet has changed. Disconnect and reconnect."
+        );
       }
 
       if (owner.equals(feeWallet)) {
-        throw new Error("استخدم محفظة إنشاء مختلفة عن محفظة استلام رسوم الخدمة.");
+        throw new Error(
+          "Connect a different wallet from the service fee recipient wallet."
+        );
       }
 
-      show("جارٍ تجهيز معاملة إنشاء العملة على الشبكة الرئيسية...");
+      showTransaction(
+        "Preparing the token creation transaction on Solana Mainnet..."
+      );
 
       const mint = Keypair.generate();
       const rent = await getMinimumBalanceForRentExemptMint(connection);
+
       const tokenAccount = await getAssociatedTokenAddress(
-        mint.publicKey, owner
+        mint.publicKey,
+        owner
       );
 
       const transaction = new Transaction();
@@ -299,6 +359,7 @@ try {
           lamports: rent,
           programId: TOKEN_PROGRAM_ID
         }),
+
         createInitializeMintInstruction(
           mint.publicKey,
           decimals,
@@ -306,6 +367,7 @@ try {
           owner,
           TOKEN_PROGRAM_ID
         ),
+
         createAssociatedTokenAccountInstruction(
           owner,
           tokenAccount,
@@ -313,6 +375,7 @@ try {
           mint.publicKey,
           TOKEN_PROGRAM_ID
         ),
+
         createMintToInstruction(
           mint.publicKey,
           tokenAccount,
@@ -321,6 +384,7 @@ try {
           [],
           TOKEN_PROGRAM_ID
         ),
+
         SystemProgram.transfer({
           fromPubkey: owner,
           toPubkey: feeWallet,
@@ -329,32 +393,37 @@ try {
       );
 
       const latest = await connection.getLatestBlockhash("confirmed");
+
       transaction.recentBlockhash = latest.blockhash;
       transaction.lastValidBlockHeight = latest.lastValidBlockHeight;
+
       transaction.partialSign(mint);
 
-      show(
-        "راجع تفاصيل المعاملة في Phantom قبل التوقيع.\n" +
-        "اسم العملة: " + name + "\n" +
-        "رمز العملة: " + symbol + "\n" +
-        "الكمية: " + supply.toString() + "\n" +
-        "المنازل العشرية: " + decimals + "\n" +
-        "رسوم الخدمة: 0.05 SOL\n" +
-        "المستلم: " + feeWallet.toBase58() + "\n\n" +
-        "الاسم والرمز لا يُحفظان كبيانات metadata في هذه النسخة."
+      showTransaction(
+        "Review the transaction carefully in Phantom before approving.\n\n" +
+        "Token name: " + name + "\n" +
+        "Token symbol: " + symbol + "\n" +
+        "Initial supply: " + supply.toString() + "\n" +
+        "Decimals: " + decimals + "\n" +
+        "Service fee: 0.05 SOL\n" +
+        "Fee recipient: " + feeWallet.toBase58() + "\n\n" +
+        "The name and symbol are not written to on-chain metadata."
       );
 
       const result = await provider.signAndSendTransaction(transaction);
+
       const signature = typeof result === "string"
         ? result
         : result && result.signature;
 
       if (!signature) {
-        throw new Error("لم يرجع Phantom توقيع المعاملة.");
+        throw new Error("Phantom did not return a transaction signature.");
       }
 
-      transactionSent = true;
-      show("أُرسلت المعاملة. جارٍ انتظار تأكيد الشبكة...\n" + signature);
+      showTransaction(
+        "Transaction submitted. Waiting for Solana confirmation...\n" +
+        signature
+      );
 
       const confirmation = await connection.confirmTransaction({
         signature,
@@ -363,26 +432,28 @@ try {
       }, "confirmed");
 
       if (confirmation.value.err) {
-        throw new Error("رفضت الشبكة المعاملة.");
+        throw new Error(
+          "The network reported a failed transaction. Check the explorer before retrying."
+        );
       }
 
-      show(
-        "نجحت معاملة إنشاء العملة!\n\n" +
-        "عنوان العملة:\n" + mint.publicKey.toBase58() + "\n\n" +
-        "رابط المعاملة:\n" +
+      showTransaction(
+        "Token creation transaction confirmed!\n\n" +
+        "Token mint address:\n" + mint.publicKey.toBase58() + "\n\n" +
+        "Transaction:\n" +
         "https://explorer.solana.com/tx/" + signature + "\n\n" +
-        "رابط العملة:\n" +
-        "https://explorer.solana.com/address/" + mint.publicKey.toBase58() +
-        "\n\nتنبيه: الاسم والرمز لا يُحفظان كبيانات metadata.",
+        "Token account:\n" +
+        "https://explorer.solana.com/address/" +
+        mint.publicKey.toBase58() + "\n\n" +
+        "Note: token name and symbol metadata were not created.",
         "good"
       );
 
     } catch (error) {
-      show(
-        "تعذر إكمال العملية:\n" + (error.message || String(error)) +
-        (transactionSent
-          ? "\nافحص سجل Phantom ومستكشف Solana قبل إعادة المحاولة."
-          : ""),
+      showTransaction(
+        "Operation failed:\n" +
+        (error && error.message ? error.message : String(error)) +
+        "\n\nCheck Phantom and Solana Explorer before trying again.",
         "bad"
       );
     } finally {
@@ -393,11 +464,15 @@ try {
 
   window.updateTokenCreatorButtons();
 
+  showTransaction(
+    "Solana libraries loaded. Connect your Phantom wallet to continue.",
+    "good"
+  );
+
 } catch (error) {
-  window.showTokenCreatorStatus(
-    "transactionStatus",
-    "تعذر تحميل مكتبات إنشاء العملة.\nتحقق من اتصال الإنترنت أو أعد فتح الموقع لاحقاً.\n" +
-    (error.message || String(error)),
+  showTransaction(
+    "Could not load the Solana libraries.\nCheck your internet connection and reload the website.\n\n" +
+    (error && error.message ? error.message : String(error)),
     "bad"
   );
 }
