@@ -2,624 +2,425 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1020">
-  <title>Solana Token Creator</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; background: #0b1020; color: #f4f7ff;
-      font-family: Arial, sans-serif; line-height: 1.6;
-    }
-    main { max-width: 720px; margin: auto; padding: 24px 15px; }
-    h1 { font-size: 28px; }
-    h2 { font-size: 19px; margin-top: 0; }
-    p { color: #c0cbe2; }
-    .card {
-      background: #141c31; border: 1px solid #303c5b;
-      border-radius: 16px; padding: 18px; margin: 16px 0;
-    }
-    label { display: block; margin-top: 13px; }
-    input, select {
-      width: 100%; padding: 13px; margin-top: 5px;
-      border-radius: 10px; border: 1px solid #394767;
-      background: #0c1326; color: white; font-size: 16px;
-    }
-    input[type="checkbox"] { width: auto; }
-    button {
-      width: 100%; padding: 14px; margin-top: 12px;
-      border: 0; border-radius: 10px; background: #8374ff;
-      color: white; font-size: 16px; font-weight: bold;
-    }
-    button:disabled { opacity: .5; }
-    .secondary { background: #293550; }
-    .status {
-      white-space: pre-wrap; overflow-wrap: anywhere;
-      background: #0c1326; border: 1px solid #2b3653;
-      border-radius: 10px; padding: 12px; margin-top: 12px;
-      font-size: 13px;
-    }
-    .small { font-size: 12px; color: #aab5cf; }
-    .good { color: #4ade80; }
-    .bad { color: #fb7185; }
-    code { overflow-wrap: anywhere; word-break: break-all; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solana Token Creator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#10121a;color:#f5f5f7;font-family:Arial,sans-serif}
+main{max-width:520px;margin:25px auto}
+h1{font-size:27px}
+p{color:#c0c4d0;line-height:1.6}
+.card{background:#1c1f2b;padding:20px;border-radius:16px;margin:16px 0}
+label{display:block;margin:15px 0 7px}
+input{width:100%;padding:13px;border-radius:9px;border:1px solid #41465a;background:#10121a;color:white;font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#8b5cf6;color:white;font-size:16px;font-weight:bold;margin-top:12px}
+button:disabled{opacity:.5}
+.small{font-size:13px;overflow-wrap:anywhere}
+#status{white-space:pre-wrap;overflow-wrap:anywhere;color:#fbbf24}
+a{color:#c4b5fd;overflow-wrap:anywhere}
+</style>
+<script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
 </head>
 <body>
 <main>
-  <h1>Solana Token Creator</h1>
-  <p>Create an SPL token on Solana using your Phantom wallet.</p>
+<h1>Solana Token Creator</h1>
+<p>Create an SPL token on Solana using your Phantom wallet.</p>
 
-  <section class="card">
-    <h2>1. Connect Wallet</h2>
-    <button id="connectButton" type="button">Connect Phantom</button>
-    <button id="disconnectButton" class="secondary"
-      type="button" disabled>Disconnect Wallet</button>
-    <div id="walletStatus" class="status">Checking Phantom...</div>
-  </section>
+<div class="card">
+<h3>1. Connect Wallet</h3>
+<button id="connect">Connect Phantom</button>
+<p id="wallet" class="small">Wallet not connected.</p>
+</div>
 
-  <section class="card">
-    <h2>2. Token Details</h2>
-    <label for="tokenName">Token Name</label>
-    <input id="tokenName" maxlength="32" placeholder="My Token">
+<div class="card">
+<h3>2. Token Details</h3>
 
-    <label for="tokenSymbol">Token Symbol</label>
-    <input id="tokenSymbol" maxlength="10" placeholder="MYT">
+<label for="tokenName">Token Name</label>
+<input id="tokenName" maxlength="32" placeholder="My Token">
 
-    <label for="supply">Initial Token Supply</label>
-    <input id="supply" type="number" min="1" step="1"
-      value="1000000">
+<label for="symbol">Token Symbol</label>
+<input id="symbol" maxlength="10" placeholder="MTK">
 
-    <label for="decimals">Decimal Places</label>
-    <select id="decimals">
-      <option value="0">0</option>
-      <option value="2">2</option>
-      <option value="6">6</option>
-      <option value="9" selected>9</option>
-    </select>
+<label for="supply">Initial Token Supply</label>
+<input id="supply" inputmode="decimal" placeholder="1000000">
 
-    <p class="small">
-      The initial supply will be minted to your wallet.
-      Name and symbol are not on-chain metadata in this version.
-    </p>
-  </section>
+<label for="decimals">Decimals (0–9)</label>
+<input id="decimals" type="number" min="0" max="9" value="9">
 
-  <section class="card">
-    <h2>3. Service Fee</h2>
-    <p>Service fee: <strong>0.05 SOL</strong></p>
-    <p class="small">Fee recipient:</p>
-    <code>FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi</code>
+<p>Service fee: <b>0.05 SOL</b>, plus Solana network fees and account rent.</p>
+<p class="small">Creates an SPL token and mints the initial supply to your wallet. No logo, metadata, liquidity, or exchange listing is included.</p>
 
-    <label>
-      <input id="feeConsent" type="checkbox">
-      I agree to pay the 0.05 SOL service fee plus network fees
-      and account rent.
-    </label>
-
-    <button id="createButton" type="button" disabled>
-      Create Token
-    </button>
-    <div id="transactionStatus" class="status">
-      Loading Solana library...
-    </div>
-
-    <p class="small">
-      Mainnet transactions use real SOL. Review every transaction
-      in Phantom. Never enter your recovery phrase or private key
-      on this website.
-    </p>
-  </section>
-
-  <section class="card">
-    <h2>Important Information</h2>
-    <p class="small">
-      This creates a standard SPL token and mints its initial supply.
-      It does not add token metadata, a logo, a liquidity pool, or
-      an exchange listing. Those require separate steps and may cost
-      additional money. The service fee and token creation are
-      submitted together in one transaction.
-    </p>
-  </section>
+<button id="create" disabled>Create Token</button>
+<p id="status">Connect your wallet to begin.</p>
+<p id="explorer"></p>
+</div>
 </main>
 
-<!-- Browser bundle: no ES module import required -->
-<script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
-
 <script>
-(function () {
-  "use strict";
+(() => {
+"use strict";
 
-  const $ = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
+const W = window.solanaWeb3;
 
-  const FEE_ADDRESS =
-    "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi";
-  const TOKEN_PROGRAM_ADDRESS =
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-  const ATA_PROGRAM_ADDRESS =
-    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+function showStatus(message) {
+  $("status").textContent = message;
+}
 
-  const FEE_LAMPORTS = 50000000;
-  const MINT_SIZE = 82;
+if (!W) {
+  showStatus("Solana library failed to load. Refresh the page and try again.");
+  return;
+}
 
-  let provider = null;
-  let walletAddress = null;
-  let busy = false;
-  let web3 = null;
-  let connection = null;
-  let libraryReady = false;
+const TOKEN_PROGRAM = new W.PublicKey(
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+);
 
-  function status(id, message, type) {
-    const el = $(id);
-    el.textContent = message;
-    el.className = "status" + (type ? " " + type : "");
+const ATA_PROGRAM = new W.PublicKey(
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+);
+
+const FEE_WALLET = new W.PublicKey(
+  "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi"
+);
+
+const RPCS = [
+  "https://solana-rpc.publicnode.com",
+  "https://api.mainnet.solana.com",
+  "https://api.mainnet-beta.solana.com"
+];
+
+let provider = null;
+let owner = null;
+let busy = false;
+let submitted = false;
+
+function getProvider() {
+  if (window.phantom && window.phantom.solana) {
+    return window.phantom.solana;
+  }
+  if (window.solana && window.solana.isPhantom) {
+    return window.solana;
+  }
+  return null;
+}
+
+async function getWorkingConnection() {
+  const errors = [];
+
+  for (const endpoint of RPCS) {
+    try {
+      showStatus("Testing Solana network connection...");
+
+      const connection = new W.Connection(endpoint, "confirmed");
+      await connection.getLatestBlockhash("confirmed");
+
+      return connection;
+    } catch (error) {
+      errors.push(endpoint + " — " +
+        (error.message || String(error)));
+    }
   }
 
-  function findPhantom() {
-    if (window.phantom && window.phantom.solana &&
-        window.phantom.solana.isPhantom) {
-      return window.phantom.solana;
-    }
+  throw new Error(
+    "All available public RPC endpoints failed. No transaction was intentionally submitted.\n\n" +
+    errors.join("\n") +
+    "\n\nA dedicated RPC provider may be required if access is blocked."
+  );
+}
 
-    if (window.solana && window.solana.isPhantom) {
-      return window.solana;
-    }
+function makeInstruction(programId, keys, data) {
+  return new W.TransactionInstruction({
+    programId,
+    keys,
+    data: new Uint8Array(data)
+  });
+}
 
-    return null;
+function encodeU64(value) {
+  let n = value;
+  const bytes = [];
+
+  for (let i = 0; i < 8; i++) {
+    bytes.push(Number(n & 255n));
+    n >>= 8n;
   }
 
-  function updateButtons() {
-    const connected = !!(
-      provider &&
-      walletAddress &&
-      provider.isConnected &&
-      provider.publicKey &&
-      provider.publicKey.toString() === walletAddress
+  return bytes;
+}
+
+function parseSupply(value, decimals) {
+  const text = value.trim();
+
+  if (!/^\d+(\.\d+)?$/.test(text)) {
+    throw new Error("Enter a valid positive token supply.");
+  }
+
+  const parts = text.split(".");
+  const fraction = parts[1] || "";
+
+  if (fraction.length > decimals) {
+    throw new Error(
+      "Supply has more decimal places than the selected decimals."
     );
-
-    $("connectButton").textContent =
-      connected ? "Wallet Connected" : "Connect Phantom";
-    $("disconnectButton").disabled = !provider;
-    $("createButton").disabled =
-      !connected ||
-      !libraryReady ||
-      !$("feeConsent").checked ||
-      busy;
   }
 
-  function resetWallet(message) {
-    walletAddress = null;
-    status("walletStatus", message || "Wallet disconnected.");
-    updateButtons();
+  const whole = BigInt(parts[0]);
+  const fractionValue = BigInt(
+    (fraction + "0".repeat(decimals)).slice(0, decimals) || "0"
+  );
+
+  const amount =
+    whole * (10n ** BigInt(decimals)) + fractionValue;
+
+  if (amount <= 0n || amount > 18446744073709551615n) {
+    throw new Error("Token supply is outside the supported range.");
   }
 
-  // Load the browser library and verify that it exists.
+  return amount;
+}
+
+$("connect").addEventListener("click", async () => {
   try {
-    web3 = window.solanaWeb3;
-
-    if (!web3 || !web3.Connection || !web3.Transaction) {
-      throw new Error("The Solana browser bundle did not load.");
-    }
-
-    const {
-      Connection, PublicKey
-    } = web3;
-
-    connection = new Connection(
-      "https://api.mainnet-beta.solana.com",
-      "confirmed"
-    );
-
-    // Validate configured addresses before enabling the site.
-    new PublicKey(FEE_ADDRESS);
-    new PublicKey(TOKEN_PROGRAM_ADDRESS);
-    new PublicKey(ATA_PROGRAM_ADDRESS);
-
-    libraryReady = true;
-    status(
-      "transactionStatus",
-      "Solana library loaded. Connect Phantom to continue.",
-      "good"
-    );
-  } catch (error) {
-    libraryReady = false;
-    status(
-      "transactionStatus",
-      "Solana library failed to load.\n" +
-      (error.message || String(error)) +
-      "\nReload the page or try again later.",
-      "bad"
-    );
-  }
-
-  $("connectButton").addEventListener("click", async function () {
-    provider = findPhantom();
+    provider = getProvider();
 
     if (!provider) {
-      status(
-        "walletStatus",
-        "Phantom was not detected. Open this website inside " +
-        "the Phantom app browser and try again.",
-        "bad"
+      showStatus(
+        "Phantom was not detected. Open this page in Phantom's browser or use a supported browser."
       );
-      updateButtons();
       return;
     }
 
-    if (typeof provider.connect !== "function") {
-      status("walletStatus", "Phantom connect method is unavailable.", "bad");
-      return;
+    const response = await provider.connect();
+    owner = response.publicKey || provider.publicKey;
+
+    if (!owner) {
+      throw new Error("Wallet address was not returned.");
     }
 
-    status("walletStatus", "Requesting connection from Phantom...");
+    $("wallet").textContent =
+      "Connected wallet: " + owner.toBase58();
 
-    try {
-      const result = await provider.connect();
-      const key = (result && result.publicKey) || provider.publicKey;
+    $("create").disabled = false;
+    showStatus("Wallet connected. Review the token details before creating.");
+  } catch (error) {
+    showStatus(
+      "Wallet connection failed:\n" +
+      (error.message || String(error))
+    );
+  }
+});
 
-      if (!key || !provider.isConnected) {
-        throw new Error(
-          "Phantom did not confirm an active wallet connection."
-        );
-      }
+$("create").addEventListener("click", async () => {
+  if (busy || submitted) return;
 
-      walletAddress = key.toString();
+  if (!provider || !owner) {
+    showStatus("Connect Phantom first.");
+    return;
+  }
 
-      if (!provider.publicKey ||
-          provider.publicKey.toString() !== walletAddress) {
-        throw new Error("Wallet address verification failed.");
-      }
+  let signature = null;
 
-      status(
-        "walletStatus",
-        "Connected to Phantom.\n\nWallet address:\n" +
-        walletAddress,
-        "good"
+  try {
+    busy = true;
+    $("create").disabled = true;
+    $("explorer").textContent = "";
+
+    const name = $("tokenName").value.trim();
+    const symbol = $("symbol").value.trim();
+    const decimals = Number($("decimals").value);
+
+    if (!name || !symbol) {
+      throw new Error("Enter the token name and symbol.");
+    }
+
+    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 9) {
+      throw new Error("Decimals must be between 0 and 9.");
+    }
+
+    const amount = parseSupply($("supply").value, decimals);
+
+    if (!provider.publicKey ||
+        !provider.publicKey.equals(owner)) {
+      throw new Error("Wallet changed. Reconnect Phantom.");
+    }
+
+    const connection = await getWorkingConnection();
+
+    showStatus("Checking wallet balance and required account rent...");
+
+    const balance = await connection.getBalance(owner, "confirmed");
+    const mintRent =
+      await connection.getMinimumBalanceForRentExemption(82);
+    const tokenAccountRent =
+      await connection.getMinimumBalanceForRentExemption(165);
+
+    const serviceFee = 50000000;
+    const estimatedNetworkFee = 20000;
+    const minimum =
+      mintRent + tokenAccountRent + serviceFee + estimatedNetworkFee;
+
+    if (balance < minimum) {
+      throw new Error(
+        "Insufficient SOL for the service fee, account rent and estimated network fees."
       );
-    } catch (error) {
-      walletAddress = null;
-      status(
-        "walletStatus",
-        "Connection not confirmed:\n" +
-        (error.message || String(error)),
-        "bad"
+    }
+
+    const mint = W.Keypair.generate();
+
+    const [associatedTokenAccount] =
+      W.PublicKey.findProgramAddressSync(
+        [
+          owner.toBuffer(),
+          TOKEN_PROGRAM.toBuffer(),
+          mint.publicKey.toBuffer()
+        ],
+        ATA_PROGRAM
       );
-    }
 
-    updateButtons();
-  });
+    const transaction = new W.Transaction();
 
-  $("disconnectButton").addEventListener("click", async function () {
-    const oldProvider = provider;
-
-    walletAddress = null;
-    provider = null;
-    updateButtons();
-
-    try {
-      if (oldProvider && typeof oldProvider.disconnect === "function") {
-        await oldProvider.disconnect();
-      }
-    } catch (error) {
-      // Local connection state is cleared regardless.
-    }
-
-    status("walletStatus", "Wallet disconnected.");
-    updateButtons();
-  });
-
-  $("feeConsent").addEventListener("change", updateButtons);
-
-  // Track account changes and external wallet disconnects.
-  function watchProvider(p) {
-    if (!p || typeof p.on !== "function") return;
-
-    p.on("accountChanged", function (publicKey) {
-      if (provider !== p) return;
-
-      if (publicKey && p.isConnected) {
-        walletAddress = publicKey.toString();
-        status(
-          "walletStatus",
-          "Wallet account changed.\n\n" + walletAddress,
-          "good"
-        );
-      } else {
-        resetWallet("Wallet account changed. Reconnect Phantom.");
-      }
-
-      updateButtons();
-    });
-
-    p.on("disconnect", function () {
-      if (provider === p) {
-        resetWallet("Phantom disconnected.");
-      }
-    });
-  }
-
-  $("connectButton").addEventListener("click", function () {
-    if (provider) watchProvider(provider);
-  });
-
-  function bytes(...arrays) {
-    const total = arrays.reduce((n, a) => n + a.length, 0);
-    const out = new Uint8Array(total);
-    let offset = 0;
-
-    for (const a of arrays) {
-      out.set(a, offset);
-      offset += a.length;
-    }
-    return out;
-  }
-
-  function encodeU64(value) {
-    const out = new Uint8Array(8);
-    let n = value;
-
-    for (let i = 0; i < 8; i++) {
-      out[i] = Number(n & 255n);
-      n >>= 8n;
-    }
-
-    return out;
-  }
-
-  function associatedAddress(owner, mint, PublicKey) {
-    const tokenProgram = new PublicKey(TOKEN_PROGRAM_ADDRESS);
-    const ataProgram = new PublicKey(ATA_PROGRAM_ADDRESS);
-
-    return PublicKey.findProgramAddressSync(
-      [
-        owner.toBuffer(),
-        tokenProgram.toBuffer(),
-        mint.toBuffer()
-      ],
-      ataProgram
-    )[0];
-  }
-
-  function initializeMintInstruction(mint, decimals, owner) {
-    const { PublicKey, TransactionInstruction, SYSVAR_RENT_PUBKEY } = web3;
-
-    // InitializeMint: instruction 0, decimals, mint authority,
-    // no freeze authority.
-    const data = bytes(
-      new Uint8Array([0, decimals]),
-      owner.toBytes(),
-      new Uint8Array([0])
+    // Create the mint account.
+    transaction.add(
+      W.SystemProgram.createAccount({
+        fromPubkey: owner,
+        newAccountPubkey: mint.publicKey,
+        lamports: mintRent,
+        space: 82,
+        programId: TOKEN_PROGRAM
+      })
     );
 
-    return new TransactionInstruction({
-      programId: new PublicKey(TOKEN_PROGRAM_ADDRESS),
-      keys: [
-        { pubkey: mint, isSigner: false, isWritable: true },
-        { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false }
-      ],
-      data
-    });
-  }
-
-  function createAtaInstruction(payer, ata, owner, mint) {
-    const { PublicKey, TransactionInstruction, SystemProgram } = web3;
-
-    return new TransactionInstruction({
-      programId: new PublicKey(ATA_PROGRAM_ADDRESS),
-      keys: [
-        { pubkey: payer, isSigner: true, isWritable: true },
-        { pubkey: ata, isSigner: false, isWritable: true },
-        { pubkey: owner, isSigner: false, isWritable: false },
-        { pubkey: mint, isSigner: false, isWritable: false },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-        {
-          pubkey: new PublicKey(TOKEN_PROGRAM_ADDRESS),
+    // InitializeMint2: no freeze authority.
+    transaction.add(
+      makeInstruction(
+        TOKEN_PROGRAM,
+        [{
+          pubkey: mint.publicKey,
           isSigner: false,
-          isWritable: false
-        }
-      ],
-      data: new Uint8Array([1])
-    });
+          isWritable: true
+        }],
+        [
+          20,
+          decimals,
+          ...owner.toBytes(),
+          0
+        ]
+      )
+    );
+
+    // Create the associated token account.
+    transaction.add(
+      makeInstruction(
+        ATA_PROGRAM,
+        [
+          {pubkey: owner, isSigner: true, isWritable: true},
+          {pubkey: associatedTokenAccount, isSigner: false, isWritable: true},
+          {pubkey: owner, isSigner: false, isWritable: false},
+          {pubkey: mint.publicKey, isSigner: false, isWritable: false},
+          {pubkey: W.SystemProgram.programId, isSigner: false, isWritable: false},
+          {pubkey: TOKEN_PROGRAM, isSigner: false, isWritable: false}
+        ],
+        [1]
+      )
+    );
+
+    // Mint the requested supply to the wallet.
+    transaction.add(
+      makeInstruction(
+        TOKEN_PROGRAM,
+        [
+          {pubkey: mint.publicKey, isSigner: false, isWritable: true},
+          {pubkey: associatedTokenAccount, isSigner: false, isWritable: true},
+          {pubkey: owner, isSigner: true, isWritable: false}
+        ],
+        [7, ...encodeU64(amount)]
+      )
+    );
+
+    // Disclosed service fee, included in the same transaction.
+    transaction.add(
+      W.SystemProgram.transfer({
+        fromPubkey: owner,
+        toPubkey: FEE_WALLET,
+        lamports: serviceFee
+      })
+    );
+
+    const latest = await connection.getLatestBlockhash("confirmed");
+
+    transaction.feePayer = owner;
+    transaction.recentBlockhash = latest.blockhash;
+    transaction.partialSign(mint);
+
+    showStatus(
+      "Review the transaction in Phantom. It creates a real token on Mainnet and includes a 0.05 SOL service fee plus network costs."
+    );
+
+    const signed = await provider.signTransaction(transaction);
+
+    // Prevent a second attempt after a wallet approval.
+    submitted = true;
+    showStatus("Submitting transaction. Do not press Create Token again.");
+
+    signature = await connection.sendRawTransaction(
+      signed.serialize(),
+      {
+        skipPreflight: false,
+        maxRetries: 2
+      }
+    );
+
+    $("explorer").innerHTML =
+      '<a target="_blank" rel="noopener" href="https://explorer.solana.com/tx/' +
+      signature +
+      '">View transaction in Solana Explorer</a>';
+
+    showStatus(
+      "Transaction submitted. Waiting for confirmation...\n" + signature
+    );
+
+    await connection.confirmTransaction({
+      signature,
+      blockhash: latest.blockhash,
+      lastValidBlockHeight: latest.lastValidBlockHeight
+    }, "confirmed");
+
+    showStatus(
+      "Token creation confirmed!\nMint address: " +
+      mint.publicKey.toBase58() +
+      "\n\nToken name and symbol are shown on this page, but are not registered as on-chain metadata."
+    );
+
+  } catch (error) {
+    const message = error && error.message
+      ? error.message
+      : String(error);
+
+    if (signature) {
+      $("explorer").innerHTML =
+        '<a target="_blank" rel="noopener" href="https://explorer.solana.com/tx/' +
+        signature +
+        '">Check transaction status in Solana Explorer</a>';
+
+      showStatus(
+        "A transaction signature was returned, but confirmation failed.\n" +
+        signature +
+        "\nCheck Explorer before doing anything else.\n" +
+        message
+      );
+    } else {
+      showStatus(
+        "Operation failed:\n" + message +
+        "\n\nDo not retry if you already approved a transaction. Check your wallet and Solana Explorer first."
+      );
+    }
+  } finally {
+    busy = false;
+    $("create").disabled = !owner || submitted;
   }
-
-  function mintToInstruction(mint, ata, owner, amount) {
-    const { PublicKey, TransactionInstruction } = web3;
-
-    return new TransactionInstruction({
-      programId: new PublicKey(TOKEN_PROGRAM_ADDRESS),
-      keys: [
-        { pubkey: mint, isSigner: false, isWritable: true },
-        { pubkey: ata, isSigner: false, isWritable: true },
-        { pubkey: owner, isSigner: true, isWritable: false }
-      ],
-      data: bytes(new Uint8Array([7]), encodeU64(amount))
-    });
-  }
-
-  $("createButton").addEventListener("click", async function () {
-    if (busy) return;
-
-    if (!libraryReady || !web3 || !connection) {
-      status("transactionStatus", "Solana library is not ready.", "bad");
-      return;
-    }
-
-    if (!provider || !provider.isConnected ||
-        !provider.publicKey || !walletAddress ||
-        provider.publicKey.toString() !== walletAddress) {
-      resetWallet("Wallet connection is not verified. Reconnect Phantom.");
-      return;
-    }
-
-    if (!$("feeConsent").checked) {
-      status("transactionStatus", "Please accept the service fee first.", "bad");
-      return;
-    }
-
-    if (typeof provider.signAndSendTransaction !== "function") {
-      status(
-        "transactionStatus",
-        "Phantom transaction submission is unavailable.",
-        "bad"
-      );
-      return;
-    }
-
-    busy = true;
-    updateButtons();
-
-    try {
-      const {
-        PublicKey, Keypair, SystemProgram, Transaction,
-        TransactionInstruction, LAMPORTS_PER_SOL
-      } = web3;
-
-      const name = $("tokenName").value.trim();
-      const symbol = $("tokenSymbol").value.trim();
-      const rawSupply = $("supply").value.trim();
-      const decimals = Number($("decimals").value);
-
-      if (!name || name.length > 32) {
-        throw new Error("Enter a token name up to 32 characters.");
-      }
-
-      if (!/^[A-Za-z0-9]{1,10}$/.test(symbol)) {
-        throw new Error("Use 1–10 English letters or numbers for the symbol.");
-      }
-
-      if (!/^[1-9][0-9]*$/.test(rawSupply)) {
-        throw new Error("Supply must be a whole number greater than zero.");
-      }
-
-      if (![0, 2, 6, 9].includes(decimals)) {
-        throw new Error("Choose a supported decimal setting.");
-      }
-
-      const supply = BigInt(rawSupply);
-      const amount = supply * (10n ** BigInt(decimals));
-      const maxU64 = 18446744073709551615n;
-
-      if (amount > maxU64) {
-        throw new Error("The requested token supply is too large.");
-      }
-
-      const owner = new PublicKey(walletAddress);
-      const feeWallet = new PublicKey(FEE_ADDRESS);
-
-      if (owner.equals(feeWallet)) {
-        throw new Error("The creator wallet must differ from the fee recipient.");
-      }
-
-      // Re-check the connected wallet before preparing the transaction.
-      if (!provider.isConnected ||
-          !provider.publicKey ||
-          !owner.equals(new PublicKey(provider.publicKey.toString()))) {
-        throw new Error("Wallet changed. Disconnect and reconnect Phantom.");
-      }
-
-      busy = true;
-      status(
-        "transactionStatus",
-        "Preparing transaction. Checking rent and network fees..."
-      );
-
-      const mint = Keypair.generate();
-      const ata = associatedAddress(owner, mint.publicKey, PublicKey);
-      const rent = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
-
-      const tx = new Transaction();
-      tx.feePayer = owner;
-
-      tx.add(
-        SystemProgram.createAccount({
-          fromPubkey: owner,
-          newAccountPubkey: mint.publicKey,
-          space: MINT_SIZE,
-          lamports: rent,
-          programId: new PublicKey(TOKEN_PROGRAM_ADDRESS)
-        }),
-        initializeMintInstruction(mint.publicKey, decimals, owner),
-        createAtaInstruction(owner, ata, owner, mint.publicKey),
-        mintToInstruction(mint.publicKey, ata, owner, amount),
-        SystemProgram.transfer({
-          fromPubkey: owner,
-          toPubkey: feeWallet,
-          lamports: FEE_LAMPORTS
-        })
-      );
-
-      const latest = await connection.getLatestBlockhash("confirmed");
-      tx.recentBlockhash = latest.blockhash;
-      tx.lastValidBlockHeight = latest.lastValidBlockHeight;
-      tx.partialSign(mint);
-
-      // Show a clear summary before opening Phantom for approval.
-      status(
-        "transactionStatus",
-        "Review the transaction in Phantom before approving.\n\n" +
-        "Token name: " + name + "\n" +
-        "Token symbol: " + symbol + "\n" +
-        "Supply: " + supply.toString() + "\n" +
-        "Decimals: " + decimals + "\n" +
-        "Service fee: 0.05 SOL\n" +
-        "Account rent: " + (rent / LAMPORTS_PER_SOL).toFixed(6) +
-        " SOL\n\n" +
-        "Network fees are additional. The name and symbol are not " +
-        "stored as token metadata."
-      );
-
-      const result = await provider.signAndSendTransaction(tx);
-      const signature = typeof result === "string"
-        ? result
-        : result && result.signature;
-
-      if (!signature) {
-        throw new Error("Phantom did not return a transaction signature.");
-      }
-
-      status(
-        "transactionStatus",
-        "Transaction submitted. Waiting for confirmation...\n" + signature
-      );
-
-      const confirmation = await connection.confirmTransaction({
-        signature,
-        blockhash: latest.blockhash,
-        lastValidBlockHeight: latest.lastValidBlockHeight
-      }, "confirmed");
-
-      if (confirmation.value.err) {
-        throw new Error(
-          "Transaction failed on-chain. Check the explorer before retrying."
-        );
-      }
-
-      status(
-        "transactionStatus",
-        "Token creation confirmed!\n\n" +
-        "Mint address:\n" + mint.publicKey.toBase58() + "\n\n" +
-        "Your token account:\n" + ata.toBase58() + "\n\n" +
-        "Transaction:\nhttps://explorer.solana.com/tx/" + signature + "\n\n" +
-        "Mint:\nhttps://explorer.solana.com/address/" +
-        mint.publicKey.toBase58() + "\n\n" +
-        "Metadata and logo are not included.",
-        "good"
-      );
-
-    } catch (error) {
-      status(
-        "transactionStatus",
-        "Operation failed:\n" + (error.message || String(error)) +
-        "\n\nCheck the transaction in Solana Explorer before retrying.",
-        "bad"
-      );
-    } finally {
-      busy = false;
-      updateButtons();
-    }
-  });
-
-  updateButtons();
+});
 })();
 </script>
 </body>
