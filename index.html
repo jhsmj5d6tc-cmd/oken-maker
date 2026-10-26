@@ -2,387 +2,454 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Solana Token Creator</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;padding:20px;background:#10121a;color:#f5f5f7;font-family:Arial,sans-serif}
-main{max-width:520px;margin:24px auto}
-h1{font-size:27px}
-p{color:#c0c4d0;line-height:1.6}
-.card{background:#1c1f2b;padding:20px;border-radius:16px;margin:16px 0}
-label{display:block;margin:15px 0 7px}
-input{width:100%;padding:13px;border-radius:9px;border:1px solid #41465a;background:#10121a;color:white;font-size:16px}
-button{width:100%;padding:14px;border:0;border-radius:10px;background:#8b5cf6;color:white;font-size:16px;font-weight:bold;margin-top:12px}
-button:disabled{opacity:.5}
-.small{font-size:13px;overflow-wrap:anywhere}
-#status{white-space:pre-wrap;overflow-wrap:anywhere;color:#fbbf24}
-a{color:#c4b5fd;overflow-wrap:anywhere}
-</style>
-<script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solana Token Creator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px 14px; background: #10121b;
+      color: #f4f5fa; font-family: Arial, sans-serif;
+    }
+    main {
+      max-width: 520px; margin: 25px auto; padding: 24px;
+      background: #1b1e2b; border: 1px solid #34384a;
+      border-radius: 18px;
+    }
+    h1 { font-size: 27px; margin-top: 0; }
+    p { color: #c0c5d7; line-height: 1.6; }
+    label { display: block; margin: 16px 0 7px; }
+    input {
+      width: 100%; padding: 13px; border-radius: 9px;
+      border: 1px solid #444a60; background: #10121b;
+      color: white; font-size: 16px;
+    }
+    button {
+      width: 100%; padding: 14px; margin-top: 13px;
+      border: 0; border-radius: 9px; font-size: 16px;
+      font-weight: bold; cursor: pointer;
+      background: #8b5cf6; color: white;
+    }
+    button.secondary { background: #30364a; }
+    button:disabled { opacity: .55; cursor: wait; }
+    #status {
+      margin-top: 18px; padding: 13px; border-radius: 9px;
+      background: #10121b; white-space: pre-wrap;
+      overflow-wrap: anywhere; line-height: 1.5;
+    }
+    .small { font-size: 13px; }
+    a { color: #b7a0ff; }
+  </style>
 </head>
 <body>
 <main>
-<h1>Solana Token Creator</h1>
-<p>Create an SPL token on Solana using Phantom.</p>
+  <h1>Solana Token Creator</h1>
+  <p>Create an SPL token on Solana Mainnet using your Phantom wallet.</p>
 
-<div class="card">
-<h3>1. Connect Wallet</h3>
-<button id="connect">Connect Phantom</button>
-<p id="wallet" class="small">Wallet not connected.</p>
-</div>
+  <button id="connect">Connect Phantom Wallet</button>
+  <p id="wallet">Wallet not connected.</p>
 
-<div class="card">
-<h3>2. Token Details</h3>
+  <button id="test" class="secondary">Test Network Connection</button>
 
-<label for="tokenName">Token Name</label>
-<input id="tokenName" maxlength="32" placeholder="My Token">
+  <label for="tokenName">Token Name</label>
+  <input id="tokenName" maxlength="32" placeholder="My Token">
 
-<label for="symbol">Token Symbol</label>
-<input id="symbol" maxlength="10" placeholder="MTK">
+  <label for="tokenSymbol">Token Symbol</label>
+  <input id="tokenSymbol" maxlength="10" placeholder="MTK">
 
-<label for="supply">Initial Token Supply</label>
-<input id="supply" inputmode="decimal" placeholder="1000000">
+  <label for="supply">Initial Token Supply</label>
+  <input id="supply" type="number" min="1" step="1" value="1000000">
 
-<label for="decimals">Decimals (0–9)</label>
-<input id="decimals" type="number" min="0" max="9" value="9">
+  <label for="decimals">Decimals (0–9)</label>
+  <input id="decimals" type="number" min="0" max="9" step="1" value="9">
 
-<p>Service fee: <b>0.05 SOL</b>, plus network fees and account rent.</p>
-<p class="small">This version creates a token mint and initial supply. It does not create on-chain metadata, a logo, liquidity, or exchange listing.</p>
+  <p class="small">
+    Service fee: 0.05 SOL, plus network fees and account rent.
+    The initial supply will be minted to your connected wallet.
+  </p>
 
-<button id="test">Test Network Connection</button>
-<button id="create" disabled>Create Token</button>
-<p id="status">Connect your wallet to begin.</p>
-<p id="explorer"></p>
-</div>
+  <button id="create">Create Token</button>
+
+  <div id="status">Ready. Connect your wallet and test the RPC connection first.</div>
+
+  <p class="small">
+    This version does not add token metadata, a logo, liquidity, or exchange listings.
+  </p>
 </main>
 
+<script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
 <script>
 (() => {
-"use strict";
+  "use strict";
 
-const $ = id => document.getElementById(id);
-const W = window.solanaWeb3;
+  // Paste your Helius API key between the quotation marks below.
+  const HELIUS_RPC =
+    "https://mainnet.helius-rpc.com/?api-key= https://mainnet.helius-rpc.com/?api-key=92edc637-3b1c-470c-9590-5de81934e73b
 
-const HELIUS_RPC =
-  "https://mainnet.helius-rpc.com/?api-key=PUT_YOUR_HELIUS_API_KEY_HERE";
+  const SERVICE_WALLET =
+    "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi";
 
-const TOKEN_PROGRAM = new W.PublicKey(
-  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-);
+  const TOKEN_PROGRAM =
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
-const ATA_PROGRAM = new W.PublicKey(
-  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-);
+  const ASSOCIATED_TOKEN_PROGRAM =
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 
-const FEE_WALLET = new W.PublicKey(
-  "FqUJ6SbQoKgZVzBf2Rgy2b2sEpeaad9wg6zJ24JRFhdi"
-);
+  const SYSTEM_PROGRAM =
+    "11111111111111111111111111111111";
 
-let provider = null;
-let owner = null;
-let busy = false;
-let connection = null;
-let submitted = false;
+  const FEE_LAMPORTS = 50000000;
+  const $ = id => document.getElementById(id);
 
-function status(message) {
-  $("status").textContent = message;
-}
+  let provider = null;
+  let connectedAddress = null;
+  let tested = false;
+  let busy = false;
 
-function getProvider() {
-  if (window.phantom && window.phantom.solana) {
-    return window.phantom.solana;
-  }
-  if (window.solana && window.solana.isPhantom) {
-    return window.solana;
-  }
-  return null;
-}
-
-function getConnection() {
-  if (HELIUS_RPC.includes("PUT_YOUR_HELIUS_API_KEY_HERE")) {
-    throw new Error("Add your Helius API key in the HELIUS_RPC setting first.");
+  function status(message) {
+    $("status").textContent = message;
   }
 
-  if (!connection) {
-    connection = new W.Connection(HELIUS_RPC, "confirmed");
-  }
-  return connection;
-}
-
-function instruction(programId, keys, data) {
-  return new W.TransactionInstruction({
-    programId,
-    keys,
-    data: new Uint8Array(data)
-  });
-}
-
-function encodeU64(value) {
-  let n = value;
-  const bytes = [];
-  for (let i = 0; i < 8; i++) {
-    bytes.push(Number(n & 255n));
-    n >>= 8n;
-  }
-  return bytes;
-}
-
-function parseSupply(value, decimals) {
-  const s = value.trim();
-
-  if (!/^\d+(\.\d+)?$/.test(s)) {
-    throw new Error("Enter a valid positive token supply.");
+  function setBusy(value) {
+    busy = value;
+    $("connect").disabled = value;
+    $("test").disabled = value;
+    $("create").disabled = value;
   }
 
-  const parts = s.split(".");
-  const fraction = parts[1] || "";
-
-  if (fraction.length > decimals) {
-    throw new Error("Supply has too many decimal places.");
+  function getProvider() {
+    if (window.phantom && window.phantom.solana &&
+        window.phantom.solana.isPhantom) {
+      return window.phantom.solana;
+    }
+    if (window.solana && window.solana.isPhantom) {
+      return window.solana;
+    }
+    return null;
   }
 
-  const whole = BigInt(parts[0]);
-  const frac = BigInt(
-    (fraction + "0".repeat(decimals)).slice(0, decimals) || "0"
-  );
-
-  const amount = whole * (10n ** BigInt(decimals)) + frac;
-
-  if (amount <= 0n || amount > 18446744073709551615n) {
-    throw new Error("Supply is outside the supported range.");
+  function getWeb3() {
+    if (!window.solanaWeb3) {
+      throw new Error(
+        "Solana web3 library did not load. Check your internet connection and reload the page."
+      );
+    }
+    return window.solanaWeb3;
   }
 
-  return amount;
-}
+  function checkRpcKey() {
+    if (
+      !HELIUS_RPC.includes("mainnet.helius-rpc.com") ||
+      HELIUS_RPC.includes("PUT_YOUR_HELIUS_API_KEY_HERE")
+    ) {
+      throw new Error(
+        "Add your Helius API key in the HELIUS_RPC setting first."
+      );
+    }
+  }
 
-$("connect").addEventListener("click", async () => {
-  try {
+  async function connectWallet() {
     provider = getProvider();
 
     if (!provider) {
-      status("Phantom not detected. Open this site in Phantom's browser.");
-      return;
-    }
-
-    const response = await provider.connect();
-    owner = response.publicKey || provider.publicKey;
-
-    if (!owner) throw new Error("Wallet address not returned.");
-
-    $("wallet").textContent = "Connected: " + owner.toBase58();
-    $("create").disabled = false;
-    status("Wallet connected. Test the network before creating a token.");
-  } catch (e) {
-    status("Wallet connection failed:\n" + (e.message || String(e)));
-  }
-});
-
-$("test").addEventListener("click", async () => {
-  try {
-    status("Testing Helius RPC connection...");
-    const c = getConnection();
-    const result = await c.getLatestBlockhash("confirmed");
-
-    status(
-      "RPC connection successful.\nSolana network is responding.\n" +
-      "No transaction was sent."
-    );
-  } catch (e) {
-    status(
-      "RPC test failed:\n" + (e.message || String(e)) +
-      "\nNo token transaction was sent."
-    );
-  }
-});
-
-$("create").addEventListener("click", async () => {
-  if (busy || submitted) return;
-
-  if (!provider || !owner) {
-    status("Connect Phantom first.");
-    return;
-  }
-
-  let signature = null;
-
-  try {
-    busy = true;
-    $("create").disabled = true;
-    $("explorer").textContent = "";
-
-    const name = $("tokenName").value.trim();
-    const symbol = $("symbol").value.trim();
-    const decimals = Number($("decimals").value);
-
-    if (!name || !symbol) {
-      throw new Error("Enter a token name and symbol.");
-    }
-
-    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 9) {
-      throw new Error("Decimals must be between 0 and 9.");
-    }
-
-    const amount = parseSupply($("supply").value, decimals);
-    const c = getConnection();
-
-    status("Checking Solana RPC...");
-    await c.getLatestBlockhash("confirmed");
-
-    if (!provider.publicKey || !provider.publicKey.equals(owner)) {
-      throw new Error("Wallet changed. Reconnect Phantom.");
-    }
-
-    status("Checking wallet balance and account rent...");
-
-    const balance = await c.getBalance(owner, "confirmed");
-    const mintRent = await c.getMinimumBalanceForRentExemption(82);
-    const ataRent = await c.getMinimumBalanceForRentExemption(165);
-    const serviceFee = 50000000;
-
-    if (balance < mintRent + ataRent + serviceFee + 50000) {
       throw new Error(
-        "Insufficient SOL for service fee, account rent and network fees."
+        "Phantom was not found. Open this website in Phantom's in-app browser or install Phantom."
       );
     }
 
-    const mint = W.Keypair.generate();
+    const result = await provider.connect();
+    connectedAddress = result.publicKey.toString();
+    $("wallet").textContent = "Connected wallet:\n" + connectedAddress;
+    status("Wallet connected. Test the network connection next.");
+  }
 
-    const [ata] = W.PublicKey.findProgramAddressSync(
-      [
-        owner.toBuffer(),
-        TOKEN_PROGRAM.toBuffer(),
-        mint.publicKey.toBuffer()
-      ],
-      ATA_PROGRAM
+  async function testNetwork() {
+    checkRpcKey();
+    getWeb3();
+
+    const connection = new window.solanaWeb3.Connection(
+      HELIUS_RPC, "confirmed"
     );
 
-    const tx = new W.Transaction();
+    status("Testing Solana Mainnet connection...");
 
-    // Create the token mint account.
-    tx.add(
+    const [version, latest] = await Promise.all([
+      connection.getVersion(),
+      connection.getLatestBlockhash("confirmed")
+    ]);
+
+    if (!latest || !latest.blockhash) {
+      throw new Error("RPC did not return a recent blockhash.");
+    }
+
+    tested = true;
+    status(
+      "RPC test successful!\n" +
+      "Network: Solana Mainnet\n" +
+      "Solana version: " + version["solana-core"] + "\n" +
+      "You can now review your token details."
+    );
+  }
+
+  function u64le(value) {
+    const bytes = new Uint8Array(8);
+    let n = BigInt(value);
+
+    for (let i = 0; i < 8; i++) {
+      bytes[i] = Number(n & 255n);
+      n >>= 8n;
+    }
+
+    return bytes;
+  }
+
+  async function createToken() {
+    if (busy) return;
+
+    if (!connectedAddress || !provider) {
+      throw new Error("Connect your Phantom wallet first.");
+    }
+
+    if (!tested) {
+      throw new Error("Test the RPC connection successfully before creating a token.");
+    }
+
+    checkRpcKey();
+
+    const W = getWeb3();
+    const name = $("tokenName").value.trim();
+    const symbol = $("tokenSymbol").value.trim();
+    const supplyText = $("supply").value.trim();
+    const decimals = Number($("decimals").value);
+
+    if (!name || !symbol) {
+      throw new Error("Enter the token name and symbol.");
+    }
+
+    if (!/^[1-9]\d*$/.test(supplyText)) {
+      throw new Error("Supply must be a positive whole number.");
+    }
+
+    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 9) {
+      throw new Error("Decimals must be a whole number from 0 to 9.");
+    }
+
+    if (name.length > 32 || symbol.length > 10) {
+      throw new Error("Token name is limited to 32 characters and symbol to 10.");
+    }
+
+    const supply = BigInt(supplyText);
+    const amount = supply * (10n ** BigInt(decimals));
+
+    if (amount > 18446744073709551615n) {
+      throw new Error("Token amount exceeds the SPL token limit.");
+    }
+
+    const connection = new W.Connection(HELIUS_RPC, "confirmed");
+    const owner = new W.PublicKey(connectedAddress);
+    const feeWallet = new W.PublicKey(SERVICE_WALLET);
+    const tokenProgram = new W.PublicKey(TOKEN_PROGRAM);
+    const associatedProgram = new W.PublicKey(ASSOCIATED_TOKEN_PROGRAM);
+    const systemProgram = new W.PublicKey(SYSTEM_PROGRAM);
+
+    const mint = W.Keypair.generate();
+
+    const ataSeeds = [
+      owner.toBytes(),
+      tokenProgram.toBytes(),
+      mint.publicKey.toBytes()
+    ];
+
+    const [associatedAddress] = W.PublicKey.findProgramAddressSync(
+      ataSeeds, associatedProgram
+    );
+
+    status(
+      "Preparing token creation transaction...\n" +
+      "Mint: " + mint.publicKey.toBase58() + "\n" +
+      "Review all details in Phantom before approving."
+    );
+
+    const rent = await connection.getMinimumBalanceForRentExemption(82);
+    const latest = await connection.getLatestBlockhash("confirmed");
+
+    const transaction = new W.Transaction();
+    transaction.feePayer = owner;
+    transaction.recentBlockhash = latest.blockhash;
+
+    // Service fee: 0.05 SOL
+    transaction.add(
+      W.SystemProgram.transfer({
+        fromPubkey: owner,
+        toPubkey: feeWallet,
+        lamports: FEE_LAMPORTS
+      })
+    );
+
+    // Create the mint account.
+    transaction.add(
       W.SystemProgram.createAccount({
         fromPubkey: owner,
         newAccountPubkey: mint.publicKey,
-        lamports: mintRent,
+        lamports: rent,
         space: 82,
-        programId: TOKEN_PROGRAM
+        programId: tokenProgram
       })
     );
 
-    // InitializeMint2: mint authority is the wallet; no freeze authority.
-    tx.add(
-      instruction(
-        TOKEN_PROGRAM,
-        [{
-          pubkey: mint.publicKey,
-          isSigner: false,
-          isWritable: true
-        }],
-        [20, decimals, ...owner.toBytes(), 0]
-      )
+    // Initialize SPL token mint; no freeze authority.
+    const initializeData = new Uint8Array([
+      20,
+      decimals,
+      ...owner.toBytes(),
+      0
+    ]);
+
+    transaction.add(
+      new W.TransactionInstruction({
+        programId: tokenProgram,
+        keys: [
+          { pubkey: mint.publicKey, isSigner: false, isWritable: true }
+        ],
+        data: initializeData
+      })
     );
 
-    // Create associated token account, idempotently.
-    tx.add(
-      instruction(
-        ATA_PROGRAM,
-        [
-          {pubkey: owner, isSigner: true, isWritable: true},
-          {pubkey: ata, isSigner: false, isWritable: true},
-          {pubkey: owner, isSigner: false, isWritable: false},
-          {pubkey: mint.publicKey, isSigner: false, isWritable: false},
-          {pubkey: W.SystemProgram.programId, isSigner: false, isWritable: false},
-          {pubkey: TOKEN_PROGRAM, isSigner: false, isWritable: false}
+    // Create the associated token account (idempotent).
+    transaction.add(
+      new W.TransactionInstruction({
+        programId: associatedProgram,
+        keys: [
+          { pubkey: owner, isSigner: true, isWritable: true },
+          { pubkey: associatedAddress, isSigner: false, isWritable: true },
+          { pubkey: owner, isSigner: false, isWritable: false },
+          { pubkey: mint.publicKey, isSigner: false, isWritable: false },
+          { pubkey: systemProgram, isSigner: false, isWritable: false },
+          { pubkey: tokenProgram, isSigner: false, isWritable: false }
         ],
-        [1]
-      )
+        data: new Uint8Array([1])
+      })
     );
 
     // Mint the initial supply to the wallet.
-    tx.add(
-      instruction(
-        TOKEN_PROGRAM,
-        [
-          {pubkey: mint.publicKey, isSigner: false, isWritable: true},
-          {pubkey: ata, isSigner: false, isWritable: true},
-          {pubkey: owner, isSigner: true, isWritable: false}
+    transaction.add(
+      new W.TransactionInstruction({
+        programId: tokenProgram,
+        keys: [
+          { pubkey: mint.publicKey, isSigner: false, isWritable: true },
+          { pubkey: associatedAddress, isSigner: false, isWritable: true },
+          { pubkey: owner, isSigner: true, isWritable: false }
         ],
-        [7, ...encodeU64(amount)]
-      )
-    );
-
-    // Disclosed service fee.
-    tx.add(
-      W.SystemProgram.transfer({
-        fromPubkey: owner,
-        toPubkey: FEE_WALLET,
-        lamports: serviceFee
+        data: new Uint8Array([7, ...u64le(amount)])
       })
     );
 
-    const latest = await c.getLatestBlockhash("confirmed");
-
-    tx.feePayer = owner;
-    tx.recentBlockhash = latest.blockhash;
-    tx.partialSign(mint);
-
-    status(
-      "Review the transaction carefully in Phantom. It includes a 0.05 SOL service fee plus network costs."
+    const networkFee = await connection.getFeeForMessage(
+      transaction.compileMessage(), "confirmed"
     );
 
-    const signed = await provider.signTransaction(tx);
+    if (networkFee.value === null) {
+      throw new Error("Could not estimate network fee. Please try again.");
+    }
 
-    // Avoid automatic duplicate attempts after approval.
-    submitted = true;
-    status("Sending transaction. Do not press Create Token again.");
+    const balance = await connection.getBalance(owner, "confirmed");
+    const required = FEE_LAMPORTS + rent + networkFee.value + 2000000;
 
-    signature = await c.sendRawTransaction(signed.serialize(), {
-      skipPreflight: false,
-      maxRetries: 2
-    });
+    if (balance < required) {
+      throw new Error(
+        "Insufficient SOL balance.\n" +
+        "You need at least the service fee (0.05 SOL), mint account rent, " +
+        "network fee, and a small buffer."
+      );
+    }
 
-    $("explorer").innerHTML =
-      '<a target="_blank" rel="noopener" href="https://explorer.solana.com/tx/' +
-      signature + '">View transaction in Solana Explorer</a>';
+    status(
+      "Transaction prepared.\n" +
+      "Token name: " + name + "\n" +
+      "Symbol: " + symbol + "\n" +
+      "Supply: " + supplyText + "\n" +
+      "Decimals: " + decimals + "\n" +
+      "Service fee: 0.05 SOL\n" +
+      "Mint address: " + mint.publicKey.toBase58() + "\n\n" +
+      "Phantom will ask you to review and approve the transaction."
+    );
 
-    status("Transaction sent. Waiting for confirmation...\n" + signature);
+    // The mint account must also sign the transaction.
+    transaction.partialSign(mint);
 
-    await c.confirmTransaction({
+    const signed = await provider.signTransaction(transaction);
+    const signature = await connection.sendRawTransaction(
+      signed.serialize(),
+      { skipPreflight: false, preflightCommitment: "confirmed" }
+    );
+
+    status(
+      "Transaction submitted.\nSignature: " + signature +
+      "\nWaiting for confirmation..."
+    );
+
+    const confirmation = await connection.confirmTransaction({
       signature,
       blockhash: latest.blockhash,
       lastValidBlockHeight: latest.lastValidBlockHeight
     }, "confirmed");
 
-    status(
-      "Token creation confirmed.\nMint address: " +
-      mint.publicKey.toBase58() +
-      "\n\nName and symbol are not registered as on-chain metadata."
-    );
-
-  } catch (e) {
-    const message = e && e.message ? e.message : String(e);
-
-    if (signature) {
-      $("explorer").innerHTML =
-        '<a target="_blank" rel="noopener" href="https://explorer.solana.com/tx/' +
-        signature + '">Check transaction in Explorer</a>';
-      status(
-        "Transaction signature received, but confirmation failed.\n" +
-        signature + "\nCheck Explorer before retrying.\n" + message
-      );
-    } else {
-      status(
-        "Operation failed:\n" + message +
-        "\nCheck your wallet and Explorer before retrying."
+    if (confirmation.value.err) {
+      throw new Error(
+        "Transaction failed on-chain: " +
+        JSON.stringify(confirmation.value.err) +
+        "\nSignature: " + signature
       );
     }
-  } finally {
-    busy = false;
-    $("create").disabled = !owner || submitted;
+
+    tested = false;
+    status(
+      "Token created successfully!\n\n" +
+      "Mint address: " + mint.publicKey.toBase58() + "\n" +
+      "Token account: " + associatedAddress.toBase58() + "\n" +
+      "Transaction: " + signature + "\n\n" +
+      "View transaction: https://explorer.solana.com/tx/" + signature +
+      "?cluster=mainnet-beta\n\n" +
+      "Note: token name and symbol metadata are not registered on-chain by this version."
+    );
   }
-});
+
+  $("connect").addEventListener("click", async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await connectWallet();
+    } catch (e) {
+      status("Wallet connection failed:\n" + (e.message || String(e)));
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  $("test").addEventListener("click", async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await testNetwork();
+    } catch (e) {
+      tested = false;
+      status("RPC test failed:\n" + (e.message || String(e)));
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  $("create").addEventListener("click", async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await createToken();
+    } catch (e) {
+      status("Operation failed:\n" + (e.message || String(e)));
+    } finally {
+      setBusy(false);
+    }
+  });
 })();
 </script>
 </body>
