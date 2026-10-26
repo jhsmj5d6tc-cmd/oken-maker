@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,7 +32,6 @@ a{color:#57d6a0;overflow-wrap:anywhere}
 
 <div class="card">
 <h2>2. Token Details</h2>
-
 <label for="tokenName">Token Name</label>
 <input id="tokenName" maxlength="32" placeholder="My Token">
 
@@ -45,10 +45,9 @@ a{color:#57d6a0;overflow-wrap:anywhere}
 <input id="supply" type="number" min="0.000000001" step="any" value="1000">
 
 <p class="hint">
-This version creates a basic SPL token. Name, symbol and logo metadata
-are not stored on-chain. Review every transaction in Phantom before approving.
+Basic SPL token creation. Name, symbol and logo metadata are not
+stored on-chain by this version. Review every Phantom transaction.
 </p>
-
 <button id="create" disabled>Create Token</button>
 </div>
 
@@ -74,14 +73,15 @@ import {
 } from "https://esm.sh/@solana/spl-token@0.4.13?external=web3";
 
 const RPC_URLS = [
-  "https://api.mainnet-beta.solana.com",
-  "https://solana-rpc.publicnode.com"
+  "https://solana-rpc.publicnode.com",
+  "https://api.mainnet-beta.solana.com"
 ];
 
 const $ = id => document.getElementById(id);
 let provider = null;
 let publicKey = null;
 let connection = null;
+let activeRPC = "";
 let busy = false;
 
 function setStatus(message) {
@@ -94,26 +94,26 @@ function findPhantom() {
   return null;
 }
 
-async function getWorkingConnection() {
+async function selectRPC() {
   const errors = [];
 
   for (const url of RPC_URLS) {
     try {
-      const candidate = new Connection(url, {
-        commitment: "confirmed",
-        confirmTransactionInitialTimeout: 60000
-      });
+      setStatus("Testing RPC endpoint:\n" + url);
 
+      const candidate = new Connection(url, "confirmed");
       await candidate.getVersion();
+
       connection = candidate;
+      activeRPC = url;
       return url;
     } catch (error) {
-      errors.push(url + ": " + (error.message || String(error)));
+      errors.push(url + " — " + (error.message || String(error)));
     }
   }
 
   throw new Error(
-    "All public RPC endpoints failed. " + errors.join(" | ")
+    "Both public RPC endpoints failed:\n" + errors.join("\n")
   );
 }
 
@@ -127,17 +127,19 @@ async function connectWallet() {
   }
 
   const result = await provider.connect();
-  publicKey = new PublicKey(
-    (result.publicKey || provider.publicKey).toString()
-  );
+  const key = result.publicKey || provider.publicKey;
 
+  if (!key) throw new Error("Wallet address was not returned.");
+
+  publicKey = new PublicKey(key.toString());
   $("wallet").textContent = "Connected: " + publicKey.toBase58();
   $("create").disabled = false;
-  setStatus("Wallet connected. Ready to check the Solana network.");
+  setStatus("Wallet connected. Ready to check the network.");
 }
 
 $("connect").addEventListener("click", async () => {
   $("connect").disabled = true;
+
   try {
     await connectWallet();
   } catch (error) {
@@ -156,6 +158,7 @@ async function sendTransaction(transaction, extraSigner = null) {
   if (extraSigner) transaction.partialSign(extraSigner);
 
   const signed = await provider.signTransaction(transaction);
+
   const signature = await connection.sendRawTransaction(
     signed.serialize(),
     { skipPreflight: false, maxRetries: 3 }
@@ -189,7 +192,7 @@ $("create").addEventListener("click", async () => {
   }
 
   if (!Number.isInteger(decimals) || decimals < 0 || decimals > 9) {
-    setStatus("Decimals must be a whole number from 0 to 9.");
+    setStatus("Decimals must be an integer between 0 and 9.");
     return;
   }
 
@@ -200,15 +203,16 @@ $("create").addEventListener("click", async () => {
 
   const parts = supplyText.split(".");
   if ((parts[1] || "").length > decimals) {
-    setStatus("Supply has too many decimal places for the selected decimals.");
+    setStatus("Supply has more decimal places than the selected decimals.");
     return;
   }
 
   let rawSupply;
+
   try {
-    rawSupply =
-      BigInt(parts[0]) * (10n ** BigInt(decimals)) +
-      BigInt((parts[1] || "").padEnd(decimals, "0") || "0");
+    const whole = BigInt(parts[0]);
+    const fraction = BigInt((parts[1] || "").padEnd(decimals, "0") || "0");
+    rawSupply = whole * (10n ** BigInt(decimals)) + fraction;
   } catch {
     setStatus("Invalid supply amount.");
     return;
@@ -227,19 +231,22 @@ $("create").addEventListener("click", async () => {
   let mintSignature = null;
 
   try {
-    setStatus("Checking available Solana RPC endpoints...");
-    const selectedRPC = await getWorkingConnection();
+    await selectRPC();
 
-    setStatus("RPC connected:\n" + selectedRPC + "\nChecking wallet balance...");
+    setStatus(
+      "RPC connected:\n" + activeRPC + "\nChecking wallet balance..."
+    );
 
     const balance = await connection.getBalance(publicKey, "confirmed");
+
     if (balance < 0.005 * LAMPORTS_PER_SOL) {
       throw new Error(
-        "Balance is below 0.005 SOL. More SOL may be required for rent and fees."
+        "Balance is below 0.005 SOL. More SOL may be needed for rent and fees."
       );
     }
 
     mint = Keypair.generate();
+
     const rent = await getMinimumBalanceForRentExemptMint(connection);
 
     const createMintTx = new Transaction().add(
@@ -259,19 +266,23 @@ $("create").addEventListener("click", async () => {
       )
     );
 
-    setStatus("Review and approve the token creation transaction in Phantom.");
+    setStatus("Review and approve token creation in Phantom.");
+
     mintSignature = await sendTransaction(createMintTx, mint);
 
     const mintAddress = mint.publicKey.toBase58();
 
     setStatus(
-      "Token mint created:\n" + mintAddress +
-      "\nTransaction:\n" + mintSignature +
+      "Mint created:\n" + mintAddress +
+      "\nCreation transaction:\n" + mintSignature +
       "\nPreparing token account..."
     );
 
     const ata = await getAssociatedTokenAddress(
-      mint.publicKey, publicKey, false, TOKEN_PROGRAM_ID
+      mint.publicKey,
+      publicKey,
+      false,
+      TOKEN_PROGRAM_ID
     );
 
     const existingAccount = await connection.getAccountInfo(ata, "confirmed");
@@ -279,21 +290,31 @@ $("create").addEventListener("click", async () => {
     if (!existingAccount) {
       const createAtaTx = new Transaction().add(
         createAssociatedTokenAccountInstruction(
-          publicKey, ata, publicKey, mint.publicKey, TOKEN_PROGRAM_ID
+          publicKey,
+          ata,
+          publicKey,
+          mint.publicKey,
+          TOKEN_PROGRAM_ID
         )
       );
 
-      setStatus("Review and approve the token account transaction in Phantom.");
+      setStatus("Review and approve token account creation in Phantom.");
       await sendTransaction(createAtaTx);
     }
 
     const mintToTx = new Transaction().add(
       createMintToInstruction(
-        mint.publicKey, ata, publicKey, rawSupply, [], TOKEN_PROGRAM_ID
+        mint.publicKey,
+        ata,
+        publicKey,
+        rawSupply,
+        [],
+        TOKEN_PROGRAM_ID
       )
     );
 
     setStatus("Review and approve the initial supply transaction in Phantom.");
+
     const supplySignature = await sendTransaction(mintToTx);
 
     setStatus(
@@ -308,11 +329,12 @@ $("create").addEventListener("click", async () => {
       "Supply transaction:\n" + supplySignature + "\n\n" +
       "Explorer:\nhttps://explorer.solana.com/address/" +
       mintAddress + "?cluster=mainnet-beta\n\n" +
-      "Metadata and logo are not included in this version."
+      "Name and symbol metadata and logo are not included."
     );
 
   } catch (error) {
     console.error(error);
+
     let message = error.message || String(error);
 
     if (mintSignature && mint) {
@@ -323,6 +345,7 @@ $("create").addEventListener("click", async () => {
     }
 
     setStatus("Operation failed:\n" + message);
+
   } finally {
     busy = false;
     $("connect").disabled = false;
@@ -331,6 +354,7 @@ $("create").addEventListener("click", async () => {
 });
 
 provider = findPhantom();
+
 if (provider?.isConnected && provider.publicKey) {
   publicKey = new PublicKey(provider.publicKey.toString());
   $("wallet").textContent = "Connected: " + publicKey.toBase58();
